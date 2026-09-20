@@ -1,0 +1,39 @@
+# First set-up virtual environment using following:
+
+# python3 -m venv .venv
+# source .venv/bin/activate
+# python -m pip install --upgrade pip setuptools wheel
+# cd Mitigating-biasness-in-generative-models
+
+# Then, run following command to install all the following required libraries:
+
+# pip install -r requirements.txt
+
+torch 
+torchvision
+torchaudio
+numpy
+pandas
+scipy
+scikit-learn
+pillow
+opencv-python
+matplotlib
+seaborn
+tqdm
+pyyaml
+h5py
+einops
+datasets
+huggingface_hub
+safetensors
+transformers
+diffusers
+accelerate 
+torch-fidelity
+clean-fid
+lpips
+pytorch-fid
+tensorboard
+wandb
+jupyterlab
