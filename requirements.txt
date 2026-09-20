@@ -37,3 +37,4 @@ pytorch-fid
 tensorboard
 wandb
 jupyterlab
+ipywidgets
