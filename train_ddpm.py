@@ -17,7 +17,6 @@ The model is class-conditional when multiple class folders are present.  Use
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import random
 from pathlib import Path
@@ -32,63 +31,6 @@ from tqdm.auto import tqdm
 
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-
-class FilteredImageFolder(datasets.ImageFolder):
-    """ImageFolder restricted to classes in a JSON class map and even samples.
-
-    The JSON may be either a list of class names or a mapping whose keys are
-    class names, for example ``{"cat": 0, "dog": 1}``.
-    """
-
-    def __init__(self, root: str | Path, class_map: Path, transform=None, expected_images_per_class: int = 5000):
-        super().__init__(root, transform=transform)
-        with class_map.open("r", encoding="utf-8") as handle:
-            mapping = json.load(handle)
-        if isinstance(mapping, dict):
-            # Support both {"cat": 0} and {"0": "cat"} conventions.
-            requested_classes = (
-                list(mapping.values())
-                if all(isinstance(value, str) for value in mapping.values())
-                else list(mapping.keys())
-            )
-        else:
-            requested_classes = list(mapping)
-        if not requested_classes or not all(isinstance(name, str) for name in requested_classes):
-            raise ValueError("Class map must be a non-empty list of class names or a JSON object keyed by class name")
-
-        available = set(self.classes)
-        missing = [name for name in requested_classes if name not in available]
-        if missing:
-            raise ValueError(f"Classes in {class_map} were not found in {root}: {missing}")
-        if len(requested_classes) != len(set(requested_classes)):
-            raise ValueError(f"Class map contains duplicate class names: {requested_classes}")
-
-        class_ids = {self.class_to_idx[name] for name in requested_classes}
-        selected = []
-        counts = {name: 0 for name in requested_classes}
-        # ImageFolder already sorts paths. Select indices 0, 2, 4, ... inside
-        # each class, giving half of a 10,000-image class (5,000 images).
-        for path, target in self.samples:
-            if target in class_ids:
-                class_name = self.classes[target]
-                if counts[class_name] % 2 == 0:
-                    selected.append((path, requested_classes.index(class_name)))
-                counts[class_name] += 1
-        self.samples = selected
-        self.imgs = selected
-        self.classes = requested_classes
-        self.class_to_idx = {name: index for index, name in enumerate(self.classes)}
-        self.targets = [target for _, target in selected]
-        bad_counts = {name: count for name, count in counts.items()
-                      if count < 2 or count % 2 != 0 or count // 2 != expected_images_per_class}
-        if bad_counts:
-            raise ValueError(
-                f"Each selected class must produce exactly {expected_images_per_class} images "
-                f"from an even-indexed selection; source counts: {bad_counts}"
-            )
-        expected = {name: counts[name] // 2 for name in requested_classes}
-        print(f"Selected classes: {requested_classes}; images per class: {expected}")
 
 
 def set_seed(seed: int) -> None:
@@ -215,9 +157,6 @@ def save_checkpoint(path: Path, model: nn.Module, optimizer: torch.optim.Optimiz
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--data-dir", type=Path, default=Path("images"))
-    parser.add_argument("--class-map", type=Path, default=Path("images/class_map.json"),
-                        help="JSON list or object containing the class names to train on")
-    parser.add_argument("--images-per-class", type=int, default=5000)
     parser.add_argument("--output-dir", type=Path, default=Path("ddpm_runs"))
     parser.add_argument("--image-size", type=int, default=64)
     parser.add_argument("--batch-size", type=int, default=64)
@@ -247,8 +186,7 @@ def main() -> None:
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
-    dataset = FilteredImageFolder(args.data_dir, args.class_map, transform=transform,
-                                  expected_images_per_class=args.images_per_class)
+    dataset = datasets.ImageFolder(args.data_dir, transform=transform)
     if not dataset.samples:
         raise RuntimeError(f"No images found in {args.data_dir}")
     conditional = not args.unconditional and len(dataset.classes) > 1
