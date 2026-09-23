@@ -17,10 +17,15 @@ The model is class-conditional when multiple class folders are present.  Use
 from __future__ import annotations
 
 import argparse
+import csv
 import math
 import random
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -154,6 +159,31 @@ def save_checkpoint(path: Path, model: nn.Module, optimizer: torch.optim.Optimiz
     torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(), "epoch": epoch, "args": vars(args)}, path)
 
 
+def save_loss_history(output_dir: Path, epoch: int, loss: float, resume: bool) -> None:
+    """Append the epoch loss to CSV and regenerate the loss plot."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = output_dir / "loss.csv"
+    if not resume and epoch == 1:
+        csv_path.write_text("epoch,mean_loss\n", encoding="utf-8")
+    with csv_path.open("a", newline="", encoding="utf-8") as handle:
+        csv.writer(handle).writerow([epoch, f"{loss:.8f}"])
+
+    epochs, losses = [], []
+    with csv_path.open("r", newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            epochs.append(int(row["epoch"]))
+            losses.append(float(row["mean_loss"]))
+    plt.figure(figsize=(8, 5))
+    plt.plot(epochs, losses, marker="o", linewidth=1.5)
+    plt.xlabel("Epoch")
+    plt.ylabel("Mean training loss")
+    plt.title("DDPM training loss")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_dir / "loss.png", dpi=150)
+    plt.close()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--data-dir", type=Path, default=Path("images"))
@@ -226,6 +256,7 @@ def main() -> None:
 
         mean_loss = running_loss / max(len(loader), 1)
         print(f"epoch {epoch + 1}: mean loss={mean_loss:.5f}")
+        save_loss_history(args.output_dir, epoch + 1, mean_loss, args.resume is not None)
         model.eval()
         sample_labels = None
         if conditional:
