@@ -18,20 +18,23 @@ class distribution, compare mixing amounts, and evaluate a mitigation method.
 |---|---|
 | Ten-class source dataset | `images/`: 100,000 PNGs, 10,000 per class |
 | Classification model | Trained ResNet-18; `models/checkpoint_best.pt` is present |
-| Large DDPM with EMA and attention | Trained; `models/checkpoint_0550.pt` is present; original output directory recorded as `ddpm_ema_attn_large` |
+| Large DDPM with EMA and attention | Trained through epoch 550; current checkpoint `models/ddpm.pt` |
 | Initial imbalanced D0 | Created with 15,200 source images |
 | Synthetic addition | 3,800 images from the large DDPM, organized into requested class folders |
 | Current `dataset-0` | Merged dataset: 19,000 images; `gen-dataset-0` was deleted after merging |
-| Compact unconditional G0 | 500-epoch checkpoint is present as `g0.pt` (159 MiB; archive contains `checkpoint_0500`); PyTorch metadata loading was unavailable in the local interpreter |
-| D1 for G1 | Partial `dataset-1/` verified: 14,250 images, all sampled from D0; 4,750 unfiltered G0 samples still need to be generated and classified |
-| G1 training code | Implemented in `train-g1.py`; uses the G0 architecture/defaults, trains unconditionally on D1, and refuses incomplete D1; no G1 run recorded |
+| Compact unconditional G0 | Trained through epoch 500; `models/g0.pt`, saved `epoch=499` |
+| D1 for G1 | Complete: 14,250 D0 images + 4,750 unfiltered G0 images = 19,000; summary, manifest, and folder inventory agree |
+| Compact unconditional G1 | Training completed through epoch 700 on D1; `models/g1.pt`, saved `epoch=699`, generation tag `G1` |
 | Unconditional image-pool generation | Implemented in `generate_density_samples.py` |
 | G0 bias evaluation | User-reported 1,000-sample result: HDAI 0.9221, TVD 0.1397, JSD 0.0262 bits; evaluation artifacts are not present in this workspace |
-| Recursive comparisons and mitigation results | Planned; no G1/G2 comparison or mitigation result recorded yet |
+| G0–G1 comparison and mitigation results | Pending; no completed comparison or mitigation result recorded yet |
 
 The old large DDPM is **class conditional**. G0 is **unconditional**. This is an
 intentional design change; the old checkpoint cannot be resumed directly as G0.
-Training or results on the remote GPU node must be added here when available.
+The agreed scope, confirmed on **22 October 2026**, ends at **G1**:
+**D0 → G0 → D1 → G1**, with one recursive mixing/training step.
+Baseline training is complete. Remaining experiments cover evaluation and
+mitigation comparisons at G0 and G1, followed by the interface and report.
 
 ## 2. Dataset history and current class counts
 
@@ -56,7 +59,7 @@ classifier logits or conditional checkpoint labels.
   2,000/500/100 was replaced by the user's choice of 4,000/800/200.
 - The merge preserved that ratio: each class received another 25% of its source
   count. Synthetic images are **20% of the merged dataset**: 3,800 / 19,000.
-- Current group totals are high = 15,000, medium = 3,000, low = 1,000. Their
+- D0 group totals are high = 15,000, medium = 3,000, low = 1,000. Their
   probability masses are 78.95%, 15.79%, and 5.26%, respectively.
 - The correct addition total is **3,800**; the earlier conversational total of
   4,700 was an arithmetic error.
@@ -146,18 +149,21 @@ directly with unsmoothed cross-entropy loss. Confusion matrices, per-class
 precision/recall/F1, and generated-image classification accuracy are not stored
 in the available checkpoint.
 
-### Classifier inference issue to resolve
+### Classifier preprocessing
 
 `classifier.py` supplies `classify_image` and `classify_images`, but currently
 normalizes using mean/std `(0.5, 0.5, 0.5)`, which differs from classifier
 training. Align inference preprocessing with the ImageNet normalization above
 before using this helper with `models/checkpoint_best.pt` to report bias metrics.
-This documentation update does not change that code.
+`build_dataset1.py` already uses the correct ImageNet normalization directly,
+as also recorded in D1’s summary. The earlier G0 evaluation was reported by
+the user; its evaluation script and result directory are currently absent.
 
 ## 4. Trained large DDPM: `ddpm_ema_attn_large`
 
-Architecture/training code: [train.py](train.py). Local checkpoint:
-`models/checkpoint_0550.pt`. The checkpoint records original output directory
+Architecture/training code: [train.py](train.py). Current local checkpoint:
+`models/ddpm.pt` (archive `checkpoint_0550`; historical name
+`models/checkpoint_0550.pt`). The checkpoint records original output directory
 `ddpm_ema_attn_large` and dataset `images/`.
 
 | Parameter | Saved checkpoint value |
@@ -196,36 +202,43 @@ DDPM outputs include `loss.csv`, `loss.png`, sample grids, and checkpoints. No
 DDPM loss history, FID, KID, or measured density-bias results were available
 locally for this checkpoint when this log was created.
 
-## 5. Compact unconditional G0: current configuration
+## 5. Trained compact unconditional G0 and G1
 
-Code: [train-g0.py](train-g0.py). The 500-epoch checkpoint is available as
-`g0.pt`; its PyTorch metadata could not be loaded in the local interpreter.
-The workspace also contains `ddpm_g0/checkpoint_0400.pt`. The run settings
-below describe current script defaults unless otherwise marked.
+### Saved training configurations
 
-| Parameter | Current default / behavior |
-|---|---|
-| Dataset | Full current `dataset-0`: **19,000 images**, including 3,800 generated additions |
-| Conditioning | **Unconditional**; folder labels are ignored; no class embedding instantiated |
-| Image size | 64×64 RGB |
-| Base channels / timestep embedding dimension | **32** / 256 |
-| Trainable parameters | **10,408,483**, derived from the current architecture |
-| Epochs / batch size / workers | **50 / 32 / 8** |
-| Learning rate | **1e-4**; earlier script version used 2e-4 |
-| Optimizer | AdamW, weight decay 0.01 by library default; betas (0.9, 0.999) |
-| Loss / diffusion steps | Noise-prediction MSE / 1,000 |
-| Beta schedule | Linear 1e-4 → 0.02 |
-| EMA decay | **0.999** |
-| Attention | Four-head self-attention in encoder stage 3, bottleneck, decoder stage 3 |
-| Gradient clipping | Norm 1.0 |
-| Precision | CUDA autocast + GradScaler; regular precision on CPU/MPS |
-| Image transform | Resize, random horizontal flip, normalize with mean/std 0.5 |
-| Data loading | Shuffled; `drop_last=False`, so every image is included each epoch |
-| Device | Automatically CUDA, then MPS, then CPU; CLI override available |
-| Seed | 42 |
-| Preview | **Every epoch**, 16 EMA samples in a 4×4 grid by default |
-| Checkpoint frequency | Every 5 epochs and final epoch |
-| Output directory | `ddpm_g0` |
+G0 is stored at `models/g0.pt`; G1 is stored at `models/g1.pt`. These values
+were read from the saved checkpoint metadata, including tensor shapes, without
+loading tensor payloads or running inference. Both models have **10,408,483
+parameters**, 32 base channels, 256-dimensional timestep embeddings, and no
+class embedding. Both train unconditionally on 64×64 RGB images.
+
+| Setting | G0 checkpoint | G1 checkpoint |
+|---|---|---|
+| Training script | `train-g0.py` | `train-g1.py` |
+| Dataset | `dataset-0` | `dataset-1` |
+| Completed epoch | **500** (`epoch=499`) | **700** (`epoch=699`) |
+| Requested final epoch in saved args | 600; only completion through 500 is established | 700 |
+| Original output directory | `ddpm_g0` | `ddpm_g1` |
+| Batch size / workers | **128 / 8** | **256 / 8** |
+| Learning rate at save | **1e-5** | **5e-5** |
+| EMA decay | **0.999** | **0.99** |
+| Diffusion steps | 1,000 | 1,000 |
+| Optimizer | AdamW, weight decay 0.01 | AdamW, weight decay 0.01 |
+| Device / seed | CUDA / 42 | CUDA / 42 |
+| Resume source in saved args | `ddpm_g0/checkpoint_0400.pt` | `ddpm_g1/checkpoint_0500.pt` |
+| Save interval / preview count | Every 5 epochs / 16 | Every 5 epochs / 16 |
+| Generation tag | Not stored | `G1` |
+
+G1’s resume source is its own epoch-500 checkpoint. The saved final checkpoint
+does not reconstruct every earlier training command or hyperparameter change.
+G0 and G1 differ in completed epochs, batch size, saved learning rate, and EMA
+decay. Any later difference in their output distributions cannot be attributed
+solely to synthetic-data mixing without controlling these training differences.
+
+The source code uses noise-prediction MSE, a linear beta schedule from 1e-4 to
+0.02, random horizontal flips, normalization to [-1, 1], gradient clipping at
+1.0, and CUDA autocast with GradScaler. Current CLI defaults may differ from
+the actual saved settings above.
 
 EMA is updated after optimizer steps that are not skipped by GradScaler. At each
 epoch end the script temporarily loads EMA weights, samples without labels,
@@ -235,17 +248,14 @@ weights, optimizer/scaler states, architecture arguments, epoch, and class-folde
 metadata. `dataset.json` records input class counts; `loss.csv`/`loss.png` record
 image-weighted mean training loss. Labels in metadata do not condition the model.
 
-The GPU node is reported by the user to support training batches of 512. This is
-hardware capacity information, not a saved G0 training setting. Use a CLI
-override to train or generate at 512; no such run has been verified locally.
-
 ### Size comparison
 
 | Model | Parameters | FP32 weights only | Full training checkpoint |
 |---|---:|---:|---:|
 | Classifier | 11,173,962 | ≈42.6 MiB, excluding buffers | 134,225,226 bytes ≈128.0 MiB, measured |
 | Large DDPM checkpoint 0550 | 60,098,387 | ≈229.3 MiB | 961,892,721 bytes ≈917.3 MiB, measured |
-| Compact G0 | 10,408,483 | ≈39.7 MiB | `g0.pt` 159 MiB; archive identifies checkpoint 0500 |
+| Compact G0 | 10,408,483 | ≈39.7 MiB | `models/g0.pt`: 166,852,430 bytes ≈159.1 MiB |
+| Compact G1 | 10,408,483 | ≈39.7 MiB | `models/g1.pt`: 166,852,430 bytes ≈159.1 MiB |
 
 G0 has about **82.7% fewer parameters**, or **5.8 times fewer**, than the saved
 80-channel large DDPM. Relative to a 64-channel unconditional `train.py` model
@@ -283,6 +293,44 @@ data-selection experiment.
 `generate_samples.py` imports the older non-attention architecture from
 `train_ddpm.py`; do not use it as the sampler for the current attention models.
 
+### Completed D1 construction
+
+`dataset-1/summary.json` and `dataset-1/manifest.csv` record the completed
+build; the current folder inventory contains 19,000 images and matches the
+summary’s per-class counts. The manifest contains 14,250 `D0_sample` rows and
+4,750 `G0_generated` rows.
+
+With **r = 0.25**, D1 consists of **14,250 sampled D0 images (75%)** and
+**4,750 newly generated G0 images (25%)**, using seed **20261020**. Every
+newly generated image was classified once and retained. No confidence
+threshold, rejection sampling, or class-quota balancing was applied. The
+classifier labels determine folders; unconditional G1 ignores these labels.
+Only the total size is fixed across D0 and D1; class counts can change.
+
+| Class | D0 total | Retained D0 | New G0 samples | D1 total |
+|---|---:|---:|---:|---:|
+| aircraft | 5,000 | 3,771 | 1,128 | 4,899 |
+| bird | 5,000 | 3,731 | 1,337 | 5,068 |
+| butterfly | 1,000 | 757 | 189 | 946 |
+| car | 5,000 | 3,735 | 969 | 4,704 |
+| cat | 1,000 | 771 | 170 | 941 |
+| dog | 1,000 | 746 | 516 | 1,262 |
+| fish | 250 | 188 | 117 | 305 |
+| flower | 250 | 186 | 167 | 353 |
+| human | 250 | 179 | 23 | 202 |
+| ship | 250 | 186 | 134 | 320 |
+| **Total** | **19,000** | **14,250** | **4,750** | **19,000** |
+
+D1’s high/medium/low folder totals are **14,671 / 3,149 / 1,180**, respectively.
+The 25% replacement fraction counts only new G0 samples: retained D0 images
+already include earlier synthetic additions, so D1 is not 75% real images.
+
+The summary records generator `models/g0.pt` and classifier
+`models/classifier.pt`. The latter path is absent locally; the available
+classifier is `models/checkpoint_best.pt`. Their identity has not been verified.
+The earlier 14,250-image partial-folder observation is superseded by this
+completed build; its retained class counts also differ from that partial copy.
+
 ## 7. Metrics and matrices
 
 ### Already implemented and recorded
@@ -293,7 +341,17 @@ data-selection experiment.
   grids. Denoising loss alone does not measure image quality or class bias.
 - Dataset: source/generated counts and class/group proportions above.
 
-### Proposed evaluation definitions — not yet implemented or measured
+### Metric definitions and evaluation status
+
+G0’s reported 1,000-image evaluation gave **HDAI = 0.9221**, **TVD = 0.1397**,
+and **JSD = 0.0262 bits**. These are user-reported results; the evaluation files
+are not currently available. No G1 generated-image HDAI, TVD, JSD, FID, or KID
+result has been recorded. D1’s composition is a training-data inventory, not
+an evaluation of G1’s outputs.
+
+HDAI is defined here as high-density group amplification `q_H / p_H`:
+1 means matching the reference share, above 1 means overrepresentation, and
+below 1 means underrepresentation relative to that reference.
 
 For class `i`, define training proportion `p_i = n_i / sum_j n_j` and generated
 proportion `q_i = m_i / M`, where `m_i` is the classifier count in an unfiltered
@@ -308,7 +366,7 @@ pool of `M` generated images. Use the correct reference `p` for each run.
 | Group amplification | `A_H = sum(q_i for i in high) / sum(p_i for i in high)`; likewise for medium and low |
 | Total variation distance | `TVD(p,q) = 0.5 * sum_i abs(p_i - q_i)`; 0 means matching proportions |
 | Jensen–Shannon divergence | Let `r=(p+q)/2`; `JSD=0.5*KL(p||r)+0.5*KL(q||r)`, using base-2 logs and zero-term handling |
-| Generation-to-generation change | Compare `q` between G0, G1, G2, and against the original source-mixture reference |
+| Generation-to-generation change | Compare `q` between G0 and G1, and against the common D0 reference |
 | FID / KID | Candidate image-quality metrics with fixed feature extractor, preprocessing, reference split, and sample size; no scores available yet |
 
 For every metric, record checkpoint, seed, total generated images, classifier
@@ -323,7 +381,10 @@ partition. That partition is held out from classifier training but is not an
 independent holdout for the generator. Define a suitable independent reference
 before making held-out generator-quality claims.
 
-## 8. Commands to use
+## 8. Example commands using current artifacts
+
+These are usage examples, not a reconstruction of the completed training runs.
+The checkpoint settings in section 5 are the record of those runs.
 
 Install dependencies in the intended environment:
 
@@ -340,20 +401,20 @@ python train-g0.py --data-dir dataset-0 --output-dir ddpm_g0 --epochs 50 --batch
 Resume a compatible unconditional G0 checkpoint to a larger final epoch count:
 
 ```bash
-python train-g0.py --resume ddpm_g0/checkpoint_0050.pt --epochs 100 --batch-size 512 --device cuda
+python train-g0.py --resume models/g0.pt --output-dir ddpm_g0_continued --epochs 600 --batch-size 128 --learning-rate 1e-5 --device cuda
 ```
 
 Generate an unfiltered pool using the EMA weights of that G0 checkpoint:
 
 ```bash
-python generate_density_samples.py --checkpoint ddpm_g0/checkpoint_0050.pt --num-samples 3800 --batch-size 512 --device cuda --output-dir generated_g0
+python generate_density_samples.py --checkpoint models/g0.pt --num-samples 3800 --batch-size 512 --device cuda --output-dir generated_g0
 ```
 
-Train an unconditional G1 from the completed D1. This starts from fresh
-weights; the script only permits resuming checkpoints marked as G1:
+Optionally continue the saved G1 beyond its completed epoch 700, preserving
+its saved batch size, learning rate, and EMA decay:
 
 ```bash
-python train-g1.py --data-dir dataset-1 --output-dir ddpm_g1 --epochs 50 --batch-size 32 --device auto
+python train-g1.py --data-dir dataset-1 --resume models/g1.pt --output-dir ddpm_g1_continued --epochs 800 --batch-size 256 --learning-rate 5e-5 --ema-decay 0.99 --device cuda
 ```
 
 The sampler requires an empty or new output directory. Changing sampling batch
@@ -369,36 +430,38 @@ This command is a new run, not an exact replay of the historical resumed
 classifier experiment. Likewise, the saved large DDPM's final arguments alone
 cannot reproduce its missing earlier training stages.
 
-## 9. Remaining work and experiment record
+## 9. Completed work, remaining work, and experiment record
 
-1. Repair source-image provenance and recover dog-review records; preserve a
-   frozen inventory of the current 19,000-image mixture.
-2. Correct classifier inference normalization, then evaluate per-class errors
-   and save a confusion matrix before using its predictions for bias analysis.
-3. Load `g0.pt` in the training environment and record its checkpoint
-   metadata, actual command, hardware, software versions, dataset inventory,
-   loss history, and preview examples.
-4. Preserve the full evaluation artifacts for the reported 1,000-sample G0
-   result and its unfiltered class distribution.
-5. Complete D1 with replacement fraction `r=0.25`: keep the existing random
-   14,250-image D0 sample, generate 4,750 G0 images, classify each once for
-   folder bookkeeping, and retain all of them without confidence filtering or
-   class balancing. The builder appends these to the existing partial D1.
-   Final D1 size matches D0 (19,000); its class counts may differ.
-6. Select and implement a mitigation. Class balancing or classifier-based data
-   selection are possible experiments; no method has been chosen or evaluated.
-7. Compare baseline and mitigation over repeated seeds; report image quality
-   alongside class distribution, then prepare the interface and stage-wise report.
+Completed: source/classifier preparation, the 550-epoch large conditional DDPM,
+the mixed D0, unconditional G0 through epoch 500, a reported G0 evaluation,
+D1 construction at r=0.25, and unconditional G1 through epoch 700.
+`train-g0-con.py` was created earlier as a separate conditional variant, but
+is absent from the current workspace; no completed run of it is recorded. The primary G0/G1 pipeline is unconditional.
 
-The project currently calls the compact model G0 even though its input dataset
-already contains synthetic additions. Preserve that naming history in reports;
-do not describe current G0 as trained exclusively on original source images.
+Next steps:
 
-For each future run, add a row and link its outputs:
+1. Generate an unfiltered G1 evaluation pool from `models/g1.pt` and classify
+   it with the same validated preprocessing. Report HDAI, class/group shares,
+   amplification, TVD, and JSD against D1 and a common D0 reference.
+2. Preserve evaluation outputs, training curves, sample grids, and full run
+   commands. Resolve the historical classifier filename in D1’s summary.
+3. Complete classifier per-class error analysis and qualitative review of
+   generated images; retain the reported G0 evaluation artifacts.
+4. Compare G0/G1 under matched training settings and, where feasible, multiple
+   seeds and mixing fractions. The saved runs used different training settings.
+5. Implement and evaluate mitigation at G0 and G1 against their unfiltered
+   baselines, with matched settings for each comparison. Any mitigated recursive
+   branch also ends at G1. No completed mitigation result is recorded yet.
+6. Repair historical D0 provenance, add image-quality evaluation, and finish
+   the interface and stage-wise report.
 
-| Run/date | Dataset inventory and synthetic fraction | Model/checkpoint | Command and seed | Measured metrics | Artifacts / notes |
-|---|---|---|---|---|---|
-| User-reported, 20 Oct 2026 | `dataset-0`, 19,000 images, 20% added synthetic | Unconditional compact G0; 500-epoch archive `g0.pt` | Command, device, and checkpoint metadata not verified | 1,000 generated images: HDAI 0.9221, TVD 0.1397, JSD 0.0262 bits (user-reported) | `g0.pt` present; evaluation output directory currently empty |
+| Stage | Dataset | Saved model | Recorded progress / metrics |
+|---|---|---|---|
+| Large conditional DDPM | `images/` | `models/ddpm.pt` | 550 completed epochs; produced D0 synthetic additions |
+| G0 | D0: 19,000 images, including 3,800 initial synthetic additions | `models/g0.pt` | 500 completed epochs; user-reported HDAI 0.9221, TVD 0.1397, JSD 0.0262 bits on 1,000 samples |
+| D1 construction | 14,250 D0 samples + 4,750 unfiltered G0 samples | `dataset-1/summary.json`, `manifest.csv` | Complete; 19,000 images; r=0.25; seed 20261020 |
+| G1 | Completed D1 | `models/g1.pt` | 700 completed epochs; G1 output evaluation pending |
+| Mitigation at G0 and G1 | Comparisons within the two-level study | Not yet recorded | Pending |
 
 ## 10. Environment and reproducibility notes
 
@@ -407,8 +470,10 @@ diffusion packages, and evaluation libraries, but versions are not pinned.
 Presence in requirements does not establish that a package was installed or a
 metric was run. Save the environment versions from the GPU node with each run.
 PyTorch was unavailable in the local Python interpreter during earlier work;
-checkpoint settings/results in this log were read from their stored metadata
-without running training or inference.
+checkpoint metadata was read using a restricted metadata reader that substitutes
+tensor shapes for tensor reconstruction. No training or inference was run during
+this log update. Saved settings and tensor shapes were inspected; tensor values
+and model quality were not validated by that inspection.
 
 For checkpoint settings and metrics, prefer saved metadata over conversational
 estimates or script defaults. For current image counts, prefer the actual folder

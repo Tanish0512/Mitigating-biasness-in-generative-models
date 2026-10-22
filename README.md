@@ -7,29 +7,38 @@ figures in the preparation history below describe the source subset before mergi
 
 ## Project Overview
 
-This project investigates whether repeatedly mixing synthetic images into diffusion-model training amplifies a model's preference for higher-density object classes, and develops methods to measure and mitigate that bias.
+This project investigates whether mixing synthetic images into diffusion-model training amplifies a model's preference for higher-density object classes, and develops methods to measure and mitigate that bias. The agreed study ends at **G1**, covering **G0 and G1** with one recursive training step.
 
 ## Project Description
 
 The team will create a controlled dataset split in which some object classes have approximately equal, relatively high sample counts, while other classes have fewer or very few samples. The study will use real and synthetic/generated image datasets that contain overlapping object categories and suitable class-distribution differences. Class definitions, sample counts, and dataset sources should be documented.
 
-The team will train a relatively small diffusion model on a mixture of real-world and synthetic images. After generating images with the trained model, the team will combine generated images with images from the preceding training level and train the next model. This recursive process may be repeated for up to two additional generations.
+The team trains a compact unconditional diffusion model G0 on the mixed dataset D0, then uses G0-generated images together with a sample of D0 to form D1 and train G1. The pipeline is **D0 → G0 → D1 → G1** and ends there.
 
-At each generation level, the team will:
+The completed baseline contains:
+
+- **D0:** 19,000 images, including 3,800 initial synthetic additions.
+- **G0:** trained through epoch 500; saved as `models/g0.pt`.
+- **D1:** 14,250 D0 images plus 4,750 unfiltered G0 images (`r=0.25`), for 19,000 images total. Generated images are classified once for folder placement and all are retained.
+- **G1:** trained on D1 through epoch 700; saved as `models/g1.pt`.
+
+Evaluation and mitigation comparisons remain focused on G0 and G1. Their actual saved training settings differ; see the project log before attributing output changes solely to synthetic mixing.
+
+At both levels, G0 and G1, the team will:
 
 1. Quantify the model's bias toward higher-density classes using one or more suitable metrics.
 2. Analyze how different amounts of synthetic-data mixing affect that bias, including class-wise distribution changes.
 3. Apply a proposed mitigation method and evaluate whether it reduces higher-density bias.
 
-The analysis should make clear how bias changes across generations and how much recursive synthetic-data mixing contributes to those changes.
+The analysis should show how bias changes from G0 to G1 and investigate how synthetic-data mixing contributes to that change. Baseline and mitigated comparisons stay within these two levels.
 
 ## Expected Deliverables
 
 1. **Mixed real and synthetic dataset** — A controlled dataset containing real and synthetic samples from higher- and lower-density object classes, with class-wise sample distributions clearly documented.
-2. **Multi-level recursive diffusion pipeline** — A diffusion model trained on the mixed dataset, followed by image generation and up to two additional training generations that mix generated samples with samples from the previous level.
+2. **Two-level recursive diffusion pipeline** — G0 trained on D0, followed by generation, D1 construction, and G1 training. The recursive pipeline ends at G1.
 3. **Higher-density bias metric** — A quantitative metric, or set of metrics, that measures preference for higher-density classes and tracks how it changes at each generation level.
 4. **Synthetic-mixing bias analysis** — An analysis of how varying the amount of synthetic data at each recursive level affects higher-density bias, supported by class-wise distribution results.
-5. **Bias mitigation method** — A mechanism to reduce higher-density bias during recursive training, evaluated with the proposed metric across all generation levels.
+5. **Bias mitigation method** — A mechanism to reduce higher-density bias, evaluated against the baseline at G0 and G1 using the proposed metrics.
 
 ## Final Submission Requirements
 
@@ -100,8 +109,9 @@ python train-g0-con.py --data-dir dataset-0 --output-dir ddpm_g0_conditional \
 This model passes ImageFolder labels into its class embedding and saves the
 class order in each checkpoint. It cannot resume an unconditional G0 checkpoint.
 
-Train unconditional G1 from the completed `dataset-1/` using the same compact
-architecture and defaults as G0:
+For a new G1 experiment, train on the completed `dataset-1/` using the same
+compact architecture as G0. The command below is an example, not the saved
+700-epoch run’s configuration:
 
 ```bash
 python train-g1.py --epochs 50 --batch-size 32 --device auto
@@ -130,14 +140,14 @@ predictions, per-class reference/generated proportions and amplification, and
 total variation distance, Jensen–Shannon divergence, and generated-class entropy.
 The reference distribution comes from the class counts under `dataset-0`.
 
-Build the next recursive training dataset with `r=0.25`: sample 75% of D0
+D1 was built for the final training level with `r=0.25`: sample 75% of D0
 without replacement, generate exactly 25% as many images from unconditional G0,
 classify every generated image once, and add all of them to D1. The classifier
 predictions only determine `ImageFolder` placement; there is no confidence
 filter or class balancing, and G1 remains unconditional:
 
 ```bash
-python build_dataset1.py --g0-checkpoint g0.pt \
+python build_dataset1.py --g0-checkpoint models/g0.pt \
   --classifier-checkpoint models/checkpoint_best.pt --r 0.25
 ```
 
