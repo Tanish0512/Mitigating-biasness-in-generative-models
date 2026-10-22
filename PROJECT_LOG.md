@@ -1,6 +1,6 @@
 # Project log: mitigating higher-density bias in generative models
 
-Last updated: **20 October 2026 (Asia/Kolkata)**.
+Last updated: **22 October 2026 (Asia/Kolkata)**.
 
 This is the working record of datasets, trained models, parameters, metrics,
 decisions, and planned experiments. Update it whenever a dataset, training
@@ -23,8 +23,8 @@ class distribution, compare mixing amounts, and evaluate a mitigation method.
 | Synthetic addition | 3,800 images from the large DDPM, organized into requested class folders |
 | Current `dataset-0` | Merged dataset: 19,000 images; `gen-dataset-0` was deleted after merging |
 | Compact unconditional G0 | 500-epoch checkpoint is present as `g0.pt` (159 MiB; archive contains `checkpoint_0500`); PyTorch metadata loading was unavailable in the local interpreter |
-| D1 for G1 | Partial `dataset-1/` exists: 14,250 images; all 14,250 manifest rows are D0 samples, with no G0-generated images yet |
-| G1 training code | Implemented in `train-g1.py`; configured for unconditional training on completed D1; no G1 run recorded |
+| D1 for G1 | Partial `dataset-1/` verified: 14,250 images, all sampled from D0; 4,750 unfiltered G0 samples still need to be generated and classified |
+| G1 training code | Implemented in `train-g1.py`; uses the G0 architecture/defaults, trains unconditionally on D1, and refuses incomplete D1; no G1 run recorded |
 | Unconditional image-pool generation | Implemented in `generate_density_samples.py` |
 | G0 bias evaluation | User-reported 1,000-sample result: HDAI 0.9221, TVD 0.1397, JSD 0.0262 bits; evaluation artifacts are not present in this workspace |
 | Recursive comparisons and mitigation results | Planned; no G1/G2 comparison or mitigation result recorded yet |
@@ -380,12 +380,11 @@ cannot reproduce its missing earlier training stages.
    loss history, and preview examples.
 4. Preserve the full evaluation artifacts for the reported 1,000-sample G0
    result and its unfiltered class distribution.
-5. Build G1 with replacement fraction `r=0.25`: sample 75% of D0 without
-   replacement, generate 25% as many G0 images, classify each generated image
-   once for folder bookkeeping, and retain every generated sample. D1 has the
-   same total size as D0; its class counts may change with G0's distribution.
-   The existing `dataset-1/` contains the 14,250-image D0 sample; run the builder
-   to append the 4,750 generated images and complete it.
+5. Complete D1 with replacement fraction `r=0.25`: keep the existing random
+   14,250-image D0 sample, generate 4,750 G0 images, classify each once for
+   folder bookkeeping, and retain all of them without confidence filtering or
+   class balancing. The builder appends these to the existing partial D1.
+   Final D1 size matches D0 (19,000); its class counts may differ.
 6. Select and implement a mitigation. Class balancing or classifier-based data
    selection are possible experiments; no method has been chosen or evaluated.
 7. Compare baseline and mitigation over repeated seeds; report image quality
