@@ -12,6 +12,8 @@ The checkpoint (`final.pt`, 90 MB) is not in git.
 
 | Path | Contents |
 |---|---|
+| `g0_vs_g1_bias.png` | Chart: class amplification and per-class coverage, G0 vs G1 |
+| `g0_vs_g1_samples.png` | G0 and G1 sample grids from the same noise seeds, side by side |
 | `d1_summary.json` | D1 v2 composition per class and source |
 | `training/` | `config.json`, `loss.csv`, G0 and G1 loss curves, EMA sample grids at 50k, 100k and 150k steps |
 | `classifier_new_p0.9/` | Labeller v2 (same `labeller.pkl` as G0) at p >= 0.9: per-image labels and class grids |
