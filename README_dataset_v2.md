@@ -45,6 +45,19 @@ original synthetic additions.
 Both scripts depend only on `train.py` and `train_resnet.py` from `main`, plus
 `transformers` (DINOv2) and `scikit-learn`.
 
+G0 v2 training and evaluation (results and commands in
+[results_g0_v2/README.md](results_g0_v2/README.md)):
+
+| Script | Purpose |
+|---|---|
+| `train_diffusion.py` | Trains the unconditional DDPM (22.4M parameters, cosine schedule, 150k steps); one recipe for G0, G1 and mitigated runs |
+| `sample_diffusion.py` | Generates samples from a `final.pt`, splittable across GPUs |
+| `evaluate_v2.py` | DINOv2 probe class shares, HDAI, coverage, CGI and copy check against dataset-0-v2 |
+| `compare_labellers.py` | Same samples under 8 labellers; HDAI, LDAI, density odds ratio, Vendi diversity |
+| `train_labeller.py` | Labeller v2: DINOv2 + CLIP features, 3,000 pool images per class and a background class |
+| `evaluate_features.py`, `evaluate_clip.py` | Feature, CLIP and ResNet helpers used by the scripts above (they also evaluate the old 10-class G0/G1) |
+| `diagnose_quality.py` | Sharpness and classifier checks on dataset-0 that led to the class choice |
+
 ## Reproduce
 
 Inputs: `images/` (the 100k pool, `Dataset/images.zip` on Drive), `dataset-0/`

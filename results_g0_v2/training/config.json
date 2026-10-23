@@ -1,0 +1,34 @@
+{
+  "step": 150000,
+  "class_counts": {
+    "aircraft": 6000,
+    "butterfly": 300,
+    "car": 6000,
+    "human": 300,
+    "marine_animal": 300,
+    "ship": 6000
+  },
+  "args": {
+    "data_dir": "../data/dataset-0-v2",
+    "output_dir": "../runs/g0_v2",
+    "image_size": 64,
+    "base_channels": 48,
+    "dropout": 0.1,
+    "timesteps": 1000,
+    "schedule": "cosine",
+    "steps": 150000,
+    "batch_size": 128,
+    "learning_rate": 0.0002,
+    "warmup_steps": 5000,
+    "ema_decay": 0.9999,
+    "grad_clip": 1.0,
+    "save_every": 10000,
+    "sample_every": 10000,
+    "sample_count": 64,
+    "log_every": 100,
+    "seed": 20261022,
+    "max_steps_this_run": null
+  },
+  "wall_clock_hours": 3.57,
+  "gpus": "3x RTX A6000 + 1x RTX 3080 Ti, DDP, NCCL_P2P_DISABLE=1"
+}

@@ -92,7 +92,7 @@ oversampled: ship 1,438, aircraft 262, car 255, fish 13, human 13.
 The old-D0 rejections (22 in the six kept classes) match the earlier diagnosis.
 Final dataset: 18,900 images; composition in the README.
 
-## G0 v2 training (in progress)
+## G0 v2 training
 
 G0 is trained from scratch on dataset-0-v2. No old checkpoint or setting is
 reused. The same settings will be used for G1 and mitigated runs.
@@ -111,8 +111,137 @@ reused. The same settings will be used for G1 and mitigated runs.
 
 It runs on 4 GPUs (3 RTX A6000 and 1 RTX 3080 Ti) at about 81 ms per step,
 about 3.4 hours in total. `NCCL_P2P_DISABLE=1` is required on this server: with
-direct GPU-to-GPU transfers, the mixed-GPU run hung at its first collective. The
-training script is still being finalised and is not on this branch yet.
+direct GPU-to-GPU transfers, the mixed-GPU run hung at its first collective.
+The run finished on 22 Oct in 3.6 hours (about 86 ms per step on average). Loss,
+averaged over 2,000 steps: 0.0448 at 10k, 0.0410 at 50k, 0.0399 at 100k, 0.0394
+at 150k.
 
-Next: evaluate G0 v2 (DINOv2 HDAI, coverage and CGI, copy check against the
-training set), then decide how to build D1 and train G1.
+The EMA sample grids before about 30k steps are noise: with decay 0.9999 and no
+EMA warmup, the EMA still holds about 37% of the random initial weights at 10k
+steps (0.9999^10000). Raw weights at 10k already drew recognisable vehicles. By
+150k the initial weights' share is about 3e-7, so `final.pt` is unaffected.
+
+## 22 Oct: G0 v2 evaluation
+
+4,750 samples from `final.pt` (`sample_diffusion.py`, seed 20261023), evaluated
+with `evaluate_v2.py`. The reference is G0's own training set, dataset-0-v2,
+split by class into 14,151 reference images and a 4,749-image held-out baseline
+with the training ratios. "Unseen real" is 4,749 pool images, never used in
+training, with the same ratios. DINOv2 probe balanced accuracy on the baseline:
+99.5%.
+
+| Set | HDAI | TVD | Off-manifold | Coverage high | Coverage low | CGI |
+|---|---:|---:|---:|---:|---:|---:|
+| Training baseline | 1.000 | 0.000 | 9.4% | 0.758 | 0.711 | 1.000 |
+| Unseen real | 1.000 | 0.001 | 8.9% | 0.731 | 0.713 | 1.040 |
+| **G0 v2** | **0.989** | **0.065** | **19.7%** | **0.331** | **0.264** | **0.849** |
+
+Per class (G0 v2):
+
+| Class | Training share | G0 share | Amplification | Coverage (baseline) |
+|---|---:|---:|---:|---:|
+| aircraft | 0.317 | 0.312 | 0.98 | 0.333 (0.773) |
+| car | 0.317 | 0.267 | 0.84 | 0.289 (0.748) |
+| ship | 0.317 | 0.362 | 1.14 | 0.372 (0.755) |
+| butterfly | 0.016 | 0.011 | 0.70 | **0.133** (0.724) |
+| marine_animal | 0.016 | 0.036 | 2.25 | 0.311 (0.680) |
+| human | 0.016 | 0.012 | 0.73 | 0.347 (0.729) |
+
+Findings:
+
+- HDAI cannot show much bias in a 20:1 mixture: the high group is already 95.2%
+  of the data, so HDAI's maximum is 1.05. Per-class amplification and coverage
+  are the informative measures.
+- Butterfly and human are under-produced (0.70x, 0.73x). Marine_animal is
+  over-produced (2.25x); its probe-labelled samples include dark or blue
+  near-empty images, so part of that excess is failed samples landing in the
+  class nearest to "plain blue background".
+- Coverage is the clearest bias signal. G0 covers 26-37% of each class except
+  butterfly, at 13%: butterflies are the low class G0 learned worst. CGI 0.85
+  matches the old G0's value.
+- Image quality is much better than the old G0. Vehicles and faces are
+  recognisable; butterflies are mostly shapeless.
+- No copying: 0.1% of G0 samples have DINOv2 similarity above 0.95 to a training
+  image, against 2.7% of unseen real images (the pool holds near-duplicates).
+  Median nearest similarity is 0.72 for G0 against 0.84 for unseen real. The 16
+  closest pairs are same-type aircraft with different liveries and backgrounds.
+
+Outputs: `results/eval_g0_v2/` (summary.json, per-image labels and nearest
+training images, class grids, nearest-pair grid).
+
+Next: decide how to build D1 and train G1.
+
+## 23 Oct: labeller comparison and metric choice
+
+`compare_labellers.py` labelled the same 4,750 G0 v2 samples with eight
+labellers. All of them score 99.5-100% balanced accuracy on unseen real pool
+images and give HDAI 1.000 on them. Output: `results/labellers_g0_v2/`.
+
+| Labeller | Unrecognisable | HDAI | LDAI | log2 DOR | aircraft | car | ship | butterfly | marine | human |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| DINOv2 probe | 0% | 0.989 | 1.23 | -0.31 | 0.98 | 0.84 | 1.14 | 0.70 | 2.25 | 0.73 |
+| DINOv2 probe, reject p < 0.5 | 2.1% | 0.998 | 1.04 | -0.06 | 1.00 | 0.84 | 1.15 | 0.56 | 1.84 | 0.72 |
+| CLIP probe | 0% | 0.981 | 1.39 | -0.50 | 0.98 | 0.83 | 1.13 | 0.58 | 2.79 | 0.80 |
+| CLIP probe, reject | 2.5% | 0.994 | 1.11 | -0.16 | 1.00 | 0.85 | 1.14 | 0.41 | 2.18 | 0.75 |
+| CLIP zero-shot | 0% | 0.998 | 1.04 | -0.06 | 0.99 | 0.84 | 1.17 | 0.37 | 1.34 | 1.41 |
+| CLIP zero-shot + unrecognisable | 0.8% | 1.003 | 0.95 | +0.08 | 1.00 | 0.84 | 1.17 | 0.36 | 1.34 | 1.15 |
+| Old ResNet-18 | 0% | 0.990 | 1.20 | -0.28 | 0.99 | 0.84 | 1.14 | 0.88 | 1.96 | 0.76 |
+| Consensus (DINOv2 and CLIP probes agree, both p >= 0.5) | 4.4% | 1.004 | 0.92 | +0.13 | 1.01 | 0.85 | 1.15 | 0.35 | 1.67 | 0.74 |
+
+Findings:
+
+- The labeller is not why HDAI stays near 1. All eight agree on the pattern:
+  car 0.84x, ship 1.15x, butterfly strongly under-produced (0.35-0.88x),
+  marine_animal over-produced (1.3-2.8x).
+- HDAI is blind for two reasons. Its ceiling is 1.05 at a 95.2% high share.
+  And group totals cancel: butterfly's deficit and marine_animal's excess offset
+  each other inside the low group, as do car's deficit and ship's excess inside
+  the high group. LDAI and DOR share the cancellation.
+- Hypothesis: marine_animal shares sea backgrounds with ship (6,000 images), so
+  it may borrow density from a high class. Butterfly resembles no high class and
+  loses the most. If true, bias depends on how close a rare class is to a
+  frequent one, not only on its count.
+- Vendi diversity, generated / real at equal sample size (DINOv2, consensus
+  labels, n <= 40, noisy): ship 0.69, human 0.71, butterfly 0.85, others about 1.
+
+Metrics adopted:
+
+1. Per-class amplification q_c / p_c, with the worst low class as the headline
+   (butterfly 0.35-0.88x).
+2. Coverage per class and CGI (label-free; G0 v2 CGI 0.85, butterfly 13%).
+3. log2 DOR as the group-level replacement for HDAI (unbounded, 0 = no bias),
+   reported beside the per-class numbers because it shares the cancellation.
+4. Per-class Vendi ratio for within-class diversity loss.
+5. Labels: the consensus labeller, with the DINOv2 probe as a second opinion.
+
+## 23 Oct: labeller v2 (`train_labeller.py`)
+
+The marine_animal excess came from the labeller, not from blue cars. The old
+probes saw 225 marine images reweighted 21x and had no "no object" class, so
+empty blue frames and broken boats fell into marine_animal.
+
+Labeller v2: logistic regression on concatenated DINOv2 + CLIP ViT-L/14
+features, trained on 3,000 pool images per class (no reweighting, unseen
+evaluation images excluded) plus a `background` class of 3,000 object-free
+images (upscaled corner patches and heavily blurred pool images). Checks:
+99.98% balanced accuracy on unseen real images, 0.02% of them called
+background, 100% on held-out background images. Saved as
+`results/labeller_v2/labeller.pkl`.
+
+Generated images are counted only when the labeller is confident. Unseen real
+images barely change with the threshold (0.5% fall below 0.9), so the threshold
+removes failed generations, not real objects.
+
+| G0 v2, min. confidence | Not counted | HDAI | log2 DOR | aircraft | car | ship | butterfly | marine | human |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0.5 | 3.9% | 1.001 | +0.03 | 1.01 | 0.84 | 1.16 | 0.32 | 1.89 | 0.73 |
+| 0.8 | 7.2% | 1.011 | +0.37 | 1.02 | 0.84 | 1.17 | 0.21 | 1.39 | 0.74 |
+| **0.9** | **9.6%** | **1.017** | **+0.61** | **1.04** | **0.85** | **1.17** | **0.15** | **1.13** | **0.72** |
+
+At p >= 0.9 the 77 marine_animal images are all clear sharks, whales, dolphins
+and rays (75 expected from the training share). The 103 below 0.9 are mostly
+broken boats and wreck-like shapes: failed ship generations. With failures
+removed, the expected direction appears: log2 DOR +0.61 (the high group is
+favoured 1.5x in odds), butterfly at 0.15x, human at 0.72x.
+
+Adopted: labeller v2 with a 0.9 confidence threshold for all generations.
