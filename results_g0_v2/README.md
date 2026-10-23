@@ -13,6 +13,21 @@ discussion are in [../LOG_dataset_v2.md](../LOG_dataset_v2.md). The checkpoint
 | `classifier_old/` | Results with the old classifiers. `summary_dinov2_probe.json` (DINOv2 probe, HDAI, coverage, CGI, copy check), `summary_8_labellers.json` (the same samples under 8 labellers), per-image labels, nearest training image per sample, class grids, closest-pair grids |
 | `classifier_new_p0.9/` | Results with labeller v2 (`labeller.pkl`), counting an image only when its top probability is at least 0.9. `summary.json` has thresholds 0.5, 0.8 and 0.9 for G0 v2 and unseen real images, plus the labeller checks. Per-image labels and class grids at 0.9; `marine_hi.png` / `marine_lo.png` are marine_animal images above and below 0.9 |
 
+| `classifier_new_p0.8/` | Labeller v2 at a 0.8 threshold: per-image labels, counts and metrics (`summary.json`), class grids (every butterfly, marine_animal and human image; the first 225 of the other classes and of the uncounted images) |
+
+Images per class out of 4,750 (expected from the training mix: 1,508 per high
+class, 75 per low class):
+
+| Class | Old (DINOv2 probe) | New, p >= 0.8 | New, p >= 0.9 |
+|---|---:|---:|---:|
+| aircraft | 1,484 | 1,433 | 1,416 |
+| car | 1,267 | 1,178 | 1,153 |
+| ship | 1,721 | 1,632 | 1,590 |
+| butterfly | 53 | 15 | 10 |
+| marine_animal | 170 | 97 | 77 |
+| human | 55 | 52 | 49 |
+| not counted | 0 | 343 | 455 |
+
 ## Headline numbers
 
 Class amplification is generated share / training share (1 = no bias).
