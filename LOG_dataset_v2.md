@@ -245,3 +245,52 @@ removed, the expected direction appears: log2 DOR +0.61 (the high group is
 favoured 1.5x in odds), butterfly at 0.15x, human at 0.72x.
 
 Adopted: labeller v2 with a 0.9 confidence threshold for all generations.
+
+## 23 Oct: G1 v2 (trained on D1 v2) and G0 vs G1
+
+D1 v2: 14,175 images from dataset-0-v2 (75% of each class) + 4,725 unfiltered
+G0 v2 samples (r = 0.25), 18,900 total (`build_dataset1_v2.py`). G1 v2 used the
+same recipe, GPUs and seed as G0 v2: 150k steps in 3.5 hours, final loss 0.0371
+(G0: 0.0392). 4,750 samples with the same sampling seeds as G0.
+
+Labeller v2 at p >= 0.9 (expected from the dataset-0-v2 mix: 1,508 per high
+class, 75 per low class):
+
+| Class | G0 v2 | G1 v2 | G0 amplification | G1 amplification |
+|---|---:|---:|---:|---:|
+| aircraft | 1,416 | 1,446 | 1.04 | 1.10 |
+| car | 1,153 | 1,224 | 0.85 | 0.93 |
+| ship | 1,590 | 1,360 | 1.17 | 1.04 |
+| butterfly | 10 | 12 | 0.15 | 0.18 |
+| marine_animal | 77 | **31** | 1.13 | **0.47** |
+| human | 49 | 60 | 0.72 | 0.91 |
+| low group total | 136 | **103** | | |
+| not counted | 455 (9.6%) | **617 (13.0%)** | | |
+| HDAI | 1.017 | 1.024 | | |
+| log2 DOR | +0.61 | **+0.97** | | |
+
+DINOv2 space, against dataset-0-v2 (`results/eval_g0_g1_v2/`):
+
+| | G0 v2 | G1 v2 |
+|---|---:|---:|
+| Off-manifold | 19.7% | 27.4% |
+| Coverage, high / low | 0.331 / 0.264 | 0.259 / 0.218 |
+| Coverage aircraft, car, ship | 0.33, 0.29, 0.37 | 0.25, 0.25, 0.28 |
+| Coverage butterfly, marine, human | 0.13, 0.31, 0.35 | 0.15, 0.20, 0.31 |
+| CGI | 0.85 | 0.90 |
+| Distinct nearest training images | 3,081 | 2,945 |
+| Similarity > 0.95 (copies) | 0.1% | 0.0% |
+
+Findings:
+
+- The density odds ratio grew: in odds, the high group is favoured 1.53x at G0
+  and 1.96x at G1. Confident low-class images fell from 136 to 103 (-24%).
+- marine_animal collapsed (77 to 31 confident images, coverage 0.31 to 0.20).
+  At lower thresholds G1 still makes about as many marine-like images (69 at
+  p >= 0.6), so most of them became less recognisable.
+- Butterfly stayed near zero (10 to 12, within noise); human rose (49 to 60).
+- Quality and diversity dropped across the board: more uncounted images
+  (9.6% to 13.0%), more off-manifold images, lower coverage in five of six
+  classes. CGI rose only because high-class coverage fell further than
+  low-class coverage, so CGI alone would hide the bias here.
+- No copying in either generation.
