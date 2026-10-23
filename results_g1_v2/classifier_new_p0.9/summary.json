@@ -1,0 +1,40 @@
+{
+  "threshold": 0.9,
+  "counts": {
+    "aircraft": 1446,
+    "car": 1224,
+    "ship": 1360,
+    "butterfly": 12,
+    "marine_animal": 31,
+    "human": 60,
+    "unrecognisable": 617
+  },
+  "G1v2": {
+    "counts": {
+      "aircraft": 1446,
+      "car": 1224,
+      "ship": 1360,
+      "butterfly": 12,
+      "marine_animal": 31,
+      "human": 60,
+      "unrecognisable": 617
+    },
+    "recognised": 4133,
+    "unrecognisable_fraction": 0.12989473684210526,
+    "class_amplification": {
+      "aircraft": 1.102080812968788,
+      "car": 0.9328816840067748,
+      "ship": 1.036535204451972,
+      "butterfly": 0.18291797725623035,
+      "marine_animal": 0.4725381079119284,
+      "human": 0.9145898862811517
+    },
+    "HDAI": 1.0238325671425117,
+    "LDAI": 0.5233486571497702,
+    "DOR": 1.9563106796116507,
+    "log2_DOR": 0.9681355013447491,
+    "worst_low_amplification": 0.18291797725623035,
+    "TVD": 0.04400508489547929,
+    "JSD_bits": 0.005592869293740882
+  }
+}
