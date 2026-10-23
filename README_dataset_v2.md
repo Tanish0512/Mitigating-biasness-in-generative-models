@@ -56,6 +56,7 @@ G0 v2 training and evaluation (results and commands in
 | `compare_labellers.py` | Same samples under 8 labellers; HDAI, LDAI, density odds ratio, Vendi diversity |
 | `train_labeller.py` | Labeller v2: DINOv2 + CLIP features, 3,000 pool images per class and a background class |
 | `evaluate_features.py`, `evaluate_clip.py` | Feature, CLIP and ResNet helpers used by the scripts above (they also evaluate the old 10-class G0/G1) |
+| `build_dataset1_v2.py` | Builds D1 for G1: 75% of dataset-0-v2 (per class) plus 25% unfiltered G0 v2 samples; summary in `results_g1_v2/d1_summary.json` |
 | `diagnose_quality.py` | Sharpness and classifier checks on dataset-0 that led to the class choice |
 
 ## Reproduce
