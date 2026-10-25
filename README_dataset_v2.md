@@ -60,6 +60,22 @@ G0 v2 training and evaluation (results and commands in
 | `apply_labeller.py` | Labels a folder of generated images with labeller v2 |
 | `threshold_metrics.py` | Counts and bias metrics at labeller thresholds 0.6-0.9 from an `apply_labeller.py` CSV |
 | `diagnose_quality.py` | Sharpness and classifier checks on dataset-0 that led to the class choice |
+| `demo_app.py` | Test interface (Gradio): live generation from all six models with labels and bias metrics against D0, the stored 4,750-image results with an image browser, and an upload tab that labels any images |
+
+### Test interface
+
+Needs `pip install gradio`, the six `runs/*/final.pt`, labeller v2 (`results/labeller_v2/labeller.pkl`)
+and the stored sample folders under `results/`.
+
+```bash
+CUDA_DEVICE_ORDER=PCI_BUS_ID python demo_app.py --gpus 3,4,0,1,5,3 --labeller-gpu 2
+# open http://<server>:7860, or tunnel: ssh -L 7860:localhost:7860 <user>@<server>
+```
+
+Live sampling runs the full 1000 denoising steps: about 80 s for 100 images from three models
+on three A6000s. Small live runs are noisy, so the live table also shows each model's log2 DOR
+on its 4,750 stored images. `data/demo_test_images/` holds 5 real D0 images per class for the
+upload tab.
 
 ## Reproduce
 
