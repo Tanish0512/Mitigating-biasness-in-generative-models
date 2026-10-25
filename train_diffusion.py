@@ -12,6 +12,11 @@ the training data alone:
 * bf16 autocast, horizontal flips only;
 * the step-150,000 EMA weights are the model of record (``final.pt``).
 
+Mitigation (``--class-weighting inv_sqrt``): each image's MSE is multiplied by
+its class folder's weight a_c / sum_k(p_k a_k), with a_c = n_c^(-1/2) and p_k
+the class shares, so the mean weight over the dataset is 1. The default
+``none`` keeps the plain MSE.
+
 Class folders only define the image mixture; labels are never given to the
 model. The whole dataset is loaded onto each GPU as uint8. Multi-GPU runs use
 DistributedDataParallel and split the global batch across GPUs.
@@ -231,6 +236,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--seed", type=int, default=20261022)
     parser.add_argument("--max-steps-this-run", type=int, default=None, help="Stop early (benchmarking)")
+    parser.add_argument("--class-weighting", choices=("none", "inv_sqrt"), default="none",
+                        help="Per-class loss weights from the class folders (mitigation)")
     return parser.parse_args()
 
 
@@ -270,6 +277,13 @@ def main() -> None:
 
     images, counts = load_images(args.data_dir, args.image_size)
     images = images.to(device)
+    # load_images concatenates class folders in sorted order, so labels follow the counts.
+    labels = torch.repeat_interleave(torch.arange(len(counts)), torch.tensor(list(counts.values()))).to(device)
+    class_weights = None
+    if args.class_weighting == "inv_sqrt":
+        n = torch.tensor(list(counts.values()), dtype=torch.float64)
+        raw = n.rsqrt()
+        class_weights = (raw / ((n / n.sum()) * raw).sum()).float().to(device)
     model = UNet(args.base_channels, dropout=args.dropout).to(device)
     ema = EMA(model, args.ema_decay)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=0.0)
@@ -293,7 +307,9 @@ def main() -> None:
     if main_process:
         record = {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()}
         record.update(world_size=world, per_gpu_batch=per_gpu, class_counts=counts, total_images=len(images),
-                      parameters=sum(p.numel() for p in model.parameters()))
+                      parameters=sum(p.numel() for p in model.parameters()),
+                      class_weights=None if class_weights is None
+                      else dict(zip(counts, (round(w, 4) for w in class_weights.tolist()))))
         (args.output_dir / "config.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
         print(f"{record['parameters']:,} parameters; {len(images):,} images {counts}; {world} GPU(s) x {per_gpu}")
         log_path = args.output_dir / "loss.csv"
@@ -332,7 +348,11 @@ def main() -> None:
         for group in optimizer.param_groups:
             group["lr"] = lr
         with torch.autocast(device.type, dtype=torch.bfloat16, enabled=device.type == "cuda"):
-            loss = F.mse_loss(net(noisy, t).float(), noise)
+            if class_weights is None:
+                loss = F.mse_loss(net(noisy, t).float(), noise)
+            else:
+                per_image = (net(noisy, t).float() - noise).square().flatten(1).mean(1)
+                loss = (class_weights[labels[index]] * per_image).mean()
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), args.grad_clip)

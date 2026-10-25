@@ -1,0 +1,62 @@
+{
+  "generation": "D1 v2 for training G1 v2",
+  "source_dataset": "dataset-0-v2",
+  "g0_checkpoint": "runs/g0_v2/final.pt",
+  "replacement_fraction_r": 0.5,
+  "seed": 20261023,
+  "total": 18900,
+  "kept_from_d0v2": {
+    "aircraft": 3000,
+    "butterfly": 150,
+    "car": 3000,
+    "human": 150,
+    "marine_animal": 150,
+    "ship": 3000
+  },
+  "g0_samples": 9450,
+  "g0_selection": "random, unfiltered; folder = labeller v2 label at p >= 0.9, else unrecognisable",
+  "folder_counts": {
+    "aircraft": 5805,
+    "butterfly": 171,
+    "car": 5324,
+    "human": 237,
+    "marine_animal": 296,
+    "ship": 6190,
+    "unrecognisable": 877
+  },
+  "folder_by_source": {
+    "aircraft": {
+      "d0v2_real": 2394,
+      "d0v2_synthetic": 606,
+      "g0v2": 2805
+    },
+    "butterfly": {
+      "d0v2_synthetic": 35,
+      "d0v2_real": 115,
+      "g0v2": 21
+    },
+    "car": {
+      "d0v2_real": 2418,
+      "d0v2_synthetic": 582,
+      "g0v2": 2324
+    },
+    "human": {
+      "d0v2_real": 122,
+      "d0v2_synthetic": 28,
+      "g0v2": 87
+    },
+    "marine_animal": {
+      "d0v2_synthetic": 34,
+      "d0v2_real": 116,
+      "g0v2": 146
+    },
+    "ship": {
+      "d0v2_real": 2399,
+      "d0v2_synthetic": 601,
+      "g0v2": 3190
+    },
+    "unrecognisable": {
+      "g0v2": 877
+    }
+  }
+}

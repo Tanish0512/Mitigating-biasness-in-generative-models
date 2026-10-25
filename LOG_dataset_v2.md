@@ -294,3 +294,125 @@ Findings:
   classes. CGI rose only because high-class coverage fell further than
   low-class coverage, so CGI alone would hide the bias here.
 - No copying in either generation.
+
+## 24 Oct: G1 v2 with 50% G0 images (r = 0.5)
+
+D1-r50 (`data/dataset-1-v2-r50`, built with `build_dataset1_v2.py --r 0.5`)
+keeps 50% of each dataset-0-v2 class (9,450 images) and adds 9,450 unfiltered
+G0 v2 samples. By their labels the G0 half holds butterfly 171, marine_animal 296,
+human 237 and 877 unrecognisable images. G1-r50 used the same recipe, 4 GPUs and
+seed as G1 v2 (final loss 0.0350). 4,750 samples, same sampling seeds; the
+labeller v2 counts use p >= 0.9 (`results/labeller_v2_G1v2r50_thresholds.json`).
+
+| Class | G0 v2 | G1 25% | G1 50% |
+|---|---:|---:|---:|
+| aircraft | 1,416 | 1,446 | 1,400 |
+| car | 1,153 | 1,224 | 1,039 |
+| ship | 1,590 | 1,360 | 1,531 |
+| butterfly | 10 | 12 | **4** |
+| marine_animal | 77 | 31 | 68 |
+| human | 49 | 60 | **38** |
+| low group total | 136 | 103 | 110 |
+| not counted | 9.6% | 13.0% | **14.1%** |
+| HDAI | 1.017 | 1.024 | 1.022 |
+| LDAI | 0.665 | 0.523 | 0.566 |
+| log2 DOR | +0.61 | +0.97 | +0.85 |
+| worst low-class amplification | 0.15 | 0.18 | **0.06** |
+| TVD / JSD (bits) | 0.067 / 0.007 | 0.044 / 0.006 | 0.084 / 0.011 |
+
+| DINOv2 space (`results/eval_g0_g1_r50/`) | G0 v2 | G1 25% | G1 50% |
+|---|---:|---:|---:|
+| Off-manifold | 19.7% | 27.4% | 25.6% |
+| Coverage, high / low | 0.331 / 0.264 | 0.259 / 0.218 | 0.246 / 0.206 |
+| Coverage butterfly, marine, human | 0.13, 0.31, 0.35 | 0.15, 0.20, 0.31 | 0.09, 0.25, 0.28 |
+| CGI | 0.85 | 0.90 | 0.89 |
+| Copies (> 0.95) | 0.1% | 0.0% | 0.0% |
+
+Chart: `results/g0_g1_r25_r50_bias.png`.
+
+Findings:
+
+- Both mixing amounts make the bias worse than G0 (log2 DOR +0.61 to +0.97 at
+  25% and +0.85 at 50%). The group-level DOR does not grow monotonically with
+  the amount, because the two runs lose different low classes: at 25% marine
+  collapses (31); at 50% marine survives (68, real underwater scenes on
+  inspection) since G0 had over-produced marine, so D1-r50 kept almost all
+  300 marine images.
+- The classes D1-r50 was short of collapse further: butterfly 171 in D1 to 4
+  confident images (amplification 0.06, the lowest of any run), human 237 to
+  38. With more synthetic data, the under-represented classes in the
+  synthetic half are inherited and then amplified.
+- Quality and coverage fall with more mixing: 14.1% uncounted images and the
+  lowest coverage in 4 of 6 classes. CGI again hides the drop.
+- No copying.
+
+## 25 Oct: mitigated G0 (class-weighted loss) and curated D1
+
+G0-mit: same recipe as G0 v2 on dataset-0-v2, with `--class-weighting inv_sqrt`
+(per-image loss x 0.858 for high classes, x 3.838 for low classes), 2 GPUs,
+final weighted loss 0.0385. 9,450 samples with the same seeds as G0 v2
+(`results/samples_g0_v2_mit_all`); metrics on the first 4,750.
+
+| p >= 0.9 | G0 v2 | G0-mit |
+|---|---:|---:|
+| aircraft / car / ship | 1416 / 1153 / 1590 | 1240 / 904 / 1397 |
+| butterfly / marine / human | 10 / 77 / 49 | 47 / 259 / 195 |
+| low group total (expected ~225) | 136 | 501 |
+| not counted | 9.6% | 14.9% |
+| HDAI | 1.017 | 0.920 |
+| log2 DOR | +0.61 | **-1.50** |
+| TVD (labeller) | 0.067 | 0.109 |
+| Coverage high / low (DINOv2) | 0.331 / 0.264 | 0.227 / 0.521 |
+| Copies (> 0.95) | 0.1% | 0.0% |
+
+- The weighting over-corrects: the low group is now favoured (log2 DOR -1.50,
+  2.8x its D0 odds) instead of the high group (+0.61). Distance from D0 (TVD)
+  rises from 0.067 to 0.109. This is what inverse-sqrt weighting targets (an effective mix
+  proportional to sqrt(n), about 18% low instead of 4.8%), not D0's mix.
+- Low-class quality and variety improve a lot (coverage 0.26 to 0.52; human
+  0.84, above held-out real images) with no copying: every low-class image is
+  below 0.90 similarity to its nearest training image. High classes pay for it
+  (coverage 0.33 to 0.23, more uncounted images).
+- A weight between none and inv-sqrt would land near D0's mix; interpolating
+  log LDAI between the two runs suggests a ~n^-0.15 weight.
+
+Curated D1 (`data/dataset-1-v2-curated`, `build_dataset1_v2.py --curate`):
+75% of each D0 class plus 4,725 G0-mit samples with p >= 0.9 in D0's ratios
+(1,500 per high class, 75 per low class) - exactly 6,000 / 300 per class.
+
+Running: G1-mit (curated D1 + inv-sqrt, GPUs 0-3) and G1-curated (curated D1,
+no weighting, GPUs 4-5) to separate the two methods' effects.
+
+## 25 Oct: mitigated G1 and curated-only G1 (six-model comparison)
+
+Both G1s are trained on the curated D1 (D0's exact class counts, G0-mit samples
+with p >= 0.9). G1-mit adds `--class-weighting inv_sqrt` (GPUs 0-3); G1-curated
+has no weighting (GPUs 4-5). 4,750 samples each, same seeds. DINOv2 evaluation
+of all six models: `results/eval_all6/`; chart: `results/six_models_bias.png`.
+
+| p >= 0.9 | G0 | G0-mit | G1 25% | G1 50% | G1-mit | G1-curated |
+|---|---:|---:|---:|---:|---:|---:|
+| aircraft / car / ship | 1416/1153/1590 | 1240/904/1397 | 1446/1224/1360 | 1400/1039/1531 | 1166/930/1312 | 1497/1006/1673 |
+| butterfly / marine / human | 10/77/49 | 47/259/195 | 12/31/60 | 4/68/38 | 30/255/268 | 4/116/28 |
+| low total (expected ~225) | 136 | 501 | 103 | 110 | 553 | 148 |
+| not counted | 9.6% | 14.9% | 13.0% | 14.1% | 16.6% | 9.0% |
+| log2 DOR | +0.61 | -1.50 | +0.97 | +0.85 | -1.70 | +0.50 |
+| worst low amplification | 0.15 | 0.73 | 0.18 | 0.06 | 0.48 | 0.06 |
+| TVD (labeller) | 0.067 | 0.109 | 0.044 | 0.084 | 0.114 | 0.109 |
+| coverage high / low | 0.33/0.26 | 0.23/0.52 | 0.26/0.22 | 0.25/0.21 | 0.20/0.46 | 0.25/0.21 |
+| off-manifold | 19.7% | 21.8% | 27.4% | 25.6% | 26.4% | 24.3% |
+| copies (> 0.95) | 0.1% | 0% | 0% | 0% | 0% | 0% |
+
+Findings:
+
+- Weighting (n^-1/2) reverses the bias at both levels (-1.50, -1.70) and keeps
+  the low classes alive with much better coverage, at the cost of high-class
+  coverage and more failed images. It is too strong for a "match D0" goal.
+- Curation alone gives the smallest group bias of any G1 (+0.50, below G0's
+  +0.61 and G1-25%'s +0.97) and the fewest failed images (9.0%), so filtering
+  failed samples and restoring D0's ratios stops the recursive drift at group
+  level. It does not save the rarest classes: butterfly 4 and human 28 with
+  marine over-produced, so per-class TVD is no better than G0.
+- No copying in any model; the highest low-class similarity is 0.84.
+- Next candidate: curated D1 + a gentler weight (~n^-0.15), aiming for curated
+  mixing's group-level result without butterfly and human collapsing.

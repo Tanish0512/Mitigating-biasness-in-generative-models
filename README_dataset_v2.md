@@ -50,13 +50,15 @@ G0 v2 training and evaluation (results and commands in
 
 | Script | Purpose |
 |---|---|
-| `train_diffusion.py` | Trains the unconditional DDPM (22.4M parameters, cosine schedule, 150k steps); one recipe for G0, G1 and mitigated runs |
+| `train_diffusion.py` | Trains the unconditional DDPM (22.4M parameters, cosine schedule, 150k steps); one recipe for G0, G1 and mitigated runs; `--class-weighting inv_sqrt` weights each image's loss by n_c^-1/2 |
 | `sample_diffusion.py` | Generates samples from a `final.pt`, splittable across GPUs |
 | `evaluate_v2.py` | DINOv2 probe class shares, HDAI, coverage, CGI and copy check against dataset-0-v2 |
 | `compare_labellers.py` | Same samples under 8 labellers; HDAI, LDAI, density odds ratio, Vendi diversity |
 | `train_labeller.py` | Labeller v2: DINOv2 + CLIP features, 3,000 pool images per class and a background class |
 | `evaluate_features.py`, `evaluate_clip.py` | Feature, CLIP and ResNet helpers used by the scripts above (they also evaluate the old 10-class G0/G1) |
-| `build_dataset1_v2.py` | Builds D1 for G1: 75% of dataset-0-v2 (per class) plus 25% unfiltered G0 v2 samples; summary in `results_g1_v2/d1_summary.json` |
+| `build_dataset1_v2.py` | Builds D1 for G1: (1-r) of each dataset-0-v2 class plus r unfiltered G0 samples (`--r`, default 0.25); `--curate` takes only confident G0 samples in D0's class ratios |
+| `apply_labeller.py` | Labels a folder of generated images with labeller v2 |
+| `threshold_metrics.py` | Counts and bias metrics at labeller thresholds 0.6-0.9 from an `apply_labeller.py` CSV |
 | `diagnose_quality.py` | Sharpness and classifier checks on dataset-0 that led to the class choice |
 
 ## Reproduce

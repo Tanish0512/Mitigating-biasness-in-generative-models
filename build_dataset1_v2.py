@@ -9,6 +9,12 @@ Follows the original D1 design (replacement fraction r, total size fixed):
   (``unrecognisable`` below that); G1 is unconditional, so folders only record
   the composition.
 
+``--curate`` (mitigation) replaces the random, unfiltered choice: only G0
+samples whose labeller v2 probability is at least ``--threshold`` are used, and
+each class gets r * total * (its dataset-0-v2 share) of them, so the G0 part has
+D0's class ratios and no failed images. The run stops and reports the shortfall
+when a class has too few confident samples.
+
 ``manifest.csv`` lists every image with its folder, source (``d0v2_real``,
 ``d0v2_synthetic`` or ``g0v2``), source path and, for G0 images, the labeller's
 label and probability.
@@ -39,6 +45,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--labels", type=Path, required=True, help="labels_G0v2.csv from labeller v2")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--r", type=float, default=0.25, help="Fraction of D1 replaced by G0 samples")
+    parser.add_argument("--g0-checkpoint", default="runs/g0_v2/final.pt", help="Recorded in summary.json")
+    parser.add_argument("--curate", action="store_true", help="Confident G0 samples in D0's class ratios")
+    parser.add_argument("--threshold", type=float, default=0.9, help="Minimum labeller probability with --curate")
     parser.add_argument("--seed", type=int, default=20261023)
     return parser.parse_args()
 
@@ -62,8 +71,26 @@ def main() -> None:
 
     with args.labels.open(newline="", encoding="utf-8") as handle:
         labels = list(csv.DictReader(handle))
-    for r in rng.sample(labels, total - len(rows)):
-        rows.append((r[LABEL_KEY], r["image"], "g0v2", f"samples_g0_v2/{r['image']}", r["label"], r["probability"]))
+    needed = total - len(rows)
+    if args.curate:
+        d0_counts = Counter(r["class"] for r in d0)
+        exact = {c: needed * n / total for c, n in d0_counts.items()}
+        quota = {c: int(v) for c, v in exact.items()}
+        for c in sorted(exact, key=lambda c: exact[c] - quota[c], reverse=True)[:needed - sum(quota.values())]:
+            quota[c] += 1
+        pools = {c: [r for r in labels if r["label"] == c and float(r["probability"]) >= args.threshold]
+                 for c in quota}
+        short = {c: f"{len(pools[c])}/{quota[c]}" for c in quota if len(pools[c]) < quota[c]}
+        if short:
+            raise SystemExit(f"Too few confident G0 samples (have/need): {short}")
+        chosen = [r for c in sorted(quota) for r in rng.sample(pools[c], quota[c])]
+        selection = f"curated: labeller v2 probability >= {args.threshold}, per-class quotas {quota}"
+    else:
+        chosen = rng.sample(labels, needed)
+        selection = "random, unfiltered; folder = labeller v2 label at p >= 0.9, else unrecognisable"
+    for r in chosen:
+        folder = r["label"] if args.curate else r[LABEL_KEY]
+        rows.append((folder, r["image"], "g0v2", f"{args.g0_samples.name}/{r['image']}", r["label"], r["probability"]))
 
     for folder, filename, source, origin, _, _ in rows:
         target = args.output_dir / folder
@@ -78,15 +105,15 @@ def main() -> None:
     by_folder = Counter(r[0] for r in rows)
     by_source = Counter((r[0], r[2]) for r in rows)
     summary = {
-        "generation": "D1 v2 for training G1 v2",
+        "generation": "D1 v2 for training G1 v2" + (" (curated mixing)" if args.curate else ""),
         "source_dataset": "dataset-0-v2",
-        "g0_checkpoint": "runs/g0_v2/final.pt",
+        "g0_checkpoint": args.g0_checkpoint,
         "replacement_fraction_r": args.r,
         "seed": args.seed,
         "total": len(rows),
         "kept_from_d0v2": dict(kept),
         "g0_samples": total - sum(kept.values()),
-        "g0_selection": "random, unfiltered; folder = labeller v2 label at p >= 0.9, else unrecognisable",
+        "g0_selection": selection,
         "folder_counts": dict(sorted(by_folder.items())),
         "folder_by_source": {f: {s: n for (ff, s), n in by_source.items() if ff == f} for f in sorted(by_folder)},
     }

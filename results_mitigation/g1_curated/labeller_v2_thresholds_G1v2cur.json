@@ -1,0 +1,114 @@
+{
+  "0.6": {
+    "counts": {
+      "aircraft": 1527,
+      "car": 1061,
+      "ship": 1746,
+      "butterfly": 12,
+      "marine_animal": 175,
+      "human": 30,
+      "unrecognisable": 199
+    },
+    "recognised": 4551,
+    "unrecognisable_fraction": 0.04189473684210526,
+    "class_amplification": {
+      "aircraft": 1.0569215557020435,
+      "car": 0.7343770599868161,
+      "ship": 1.2085036255767962,
+      "butterfly": 0.16611733684904417,
+      "marine_animal": 2.4225444957152273,
+      "human": 0.41529334212261043
+    },
+    "HDAI": 0.9999340804218854,
+    "LDAI": 1.001318391562294,
+    "DOR": 0.9986175115207374,
+    "log2_DOR": -0.0019958892381680203,
+    "worst_low_amplification": 0.16611733684904417,
+    "TVD": 0.10684203367130195,
+    "JSD_bits": 0.01581775184877652
+  },
+  "0.7": {
+    "counts": {
+      "aircraft": 1523,
+      "car": 1051,
+      "ship": 1736,
+      "butterfly": 10,
+      "marine_animal": 158,
+      "human": 30,
+      "unrecognisable": 242
+    },
+    "recognised": 4508,
+    "unrecognisable_fraction": 0.05094736842105263,
+    "class_amplification": {
+      "aircraft": 1.0642080745341616,
+      "car": 0.7343944099378883,
+      "ship": 1.2130434782608697,
+      "butterfly": 0.13975155279503107,
+      "marine_animal": 2.208074534161491,
+      "human": 0.4192546583850932
+    },
+    "HDAI": 1.00388198757764,
+    "LDAI": 0.9223602484472051,
+    "DOR": 1.0883838383838385,
+    "log2_DOR": 0.12218743900948861,
+    "worst_low_amplification": 0.13975155279503107,
+    "TVD": 0.10719215222320813,
+    "JSD_bits": 0.015516934832282458
+  },
+  "0.8": {
+    "counts": {
+      "aircraft": 1517,
+      "car": 1036,
+      "ship": 1713,
+      "butterfly": 7,
+      "marine_animal": 143,
+      "human": 29,
+      "unrecognisable": 305
+    },
+    "recognised": 4445,
+    "unrecognisable_fraction": 0.06421052631578947,
+    "class_amplification": {
+      "aircraft": 1.0750393700787402,
+      "car": 0.7341732283464567,
+      "ship": 1.213937007874016,
+      "butterfly": 0.09921259842519685,
+      "marine_animal": 2.026771653543307,
+      "human": 0.41102362204724413
+    },
+    "HDAI": 1.007716535433071,
+    "LDAI": 0.8456692913385828,
+    "DOR": 1.1916201117318435,
+    "log2_DOR": 0.2529243781889525,
+    "worst_low_amplification": 0.09921259842519685,
+    "TVD": 0.10803649543807027,
+    "JSD_bits": 0.01575996231545873
+  },
+  "0.9": {
+    "counts": {
+      "aircraft": 1497,
+      "car": 1006,
+      "ship": 1673,
+      "butterfly": 4,
+      "marine_animal": 116,
+      "human": 28,
+      "unrecognisable": 426
+    },
+    "recognised": 4324,
+    "unrecognisable_fraction": 0.08968421052631578,
+    "class_amplification": {
+      "aircraft": 1.0905527289546717,
+      "car": 0.73286308973173,
+      "ship": 1.218767345050879,
+      "butterfly": 0.058279370952821465,
+      "marine_animal": 1.6901017576318225,
+      "human": 0.40795559666975023
+    },
+    "HDAI": 1.0140610545790936,
+    "LDAI": 0.7187789084181314,
+    "DOR": 1.4108108108108108,
+    "log2_DOR": 0.4965245360535724,
+    "worst_low_amplification": 0.058279370952821465,
+    "TVD": 0.10915084504353699,
+    "JSD_bits": 0.015968531402944148
+  }
+}
