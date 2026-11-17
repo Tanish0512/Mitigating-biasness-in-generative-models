@@ -14,8 +14,10 @@ the training data alone:
 
 Mitigation (``--class-weighting inv_sqrt``): each image's MSE is multiplied by
 its class folder's weight a_c / sum_k(p_k a_k), with a_c = n_c^(-1/2) and p_k
-the class shares, so the mean weight over the dataset is 1. The default
-``none`` keeps the plain MSE.
+the class shares, so the mean weight over the dataset is 1. With
+``--class-weighting file`` the raw a_c come from ``--class-weights-file`` (a JSON
+object mapping class folder to weight, e.g. from make_feedback_weights.py) and
+are normalised the same way. The default ``none`` keeps the plain MSE.
 
 Class folders only define the image mixture; labels are never given to the
 model. The whole dataset is loaded onto each GPU as uint8. Multi-GPU runs use
@@ -236,8 +238,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--seed", type=int, default=20261022)
     parser.add_argument("--max-steps-this-run", type=int, default=None, help="Stop early (benchmarking)")
-    parser.add_argument("--class-weighting", choices=("none", "inv_sqrt"), default="none",
+    parser.add_argument("--class-weighting", choices=("none", "inv_sqrt", "file"), default="none",
                         help="Per-class loss weights from the class folders (mitigation)")
+    parser.add_argument("--class-weights-file", type=Path, default=None,
+                        help="JSON {class folder: weight} for --class-weighting file")
     return parser.parse_args()
 
 
@@ -280,9 +284,15 @@ def main() -> None:
     # load_images concatenates class folders in sorted order, so labels follow the counts.
     labels = torch.repeat_interleave(torch.arange(len(counts)), torch.tensor(list(counts.values()))).to(device)
     class_weights = None
-    if args.class_weighting == "inv_sqrt":
+    if args.class_weighting != "none":
         n = torch.tensor(list(counts.values()), dtype=torch.float64)
-        raw = n.rsqrt()
+        if args.class_weighting == "inv_sqrt":
+            raw = n.rsqrt()
+        else:
+            given = json.loads(args.class_weights_file.read_text(encoding="utf-8"))
+            if set(given) != set(counts):
+                raise ValueError(f"Weights file classes {sorted(given)} != data classes {sorted(counts)}")
+            raw = torch.tensor([given[c] for c in counts], dtype=torch.float64)
         class_weights = (raw / ((n / n.sum()) * raw).sum()).float().to(device)
     model = UNet(args.base_channels, dropout=args.dropout).to(device)
     ema = EMA(model, args.ema_decay)
