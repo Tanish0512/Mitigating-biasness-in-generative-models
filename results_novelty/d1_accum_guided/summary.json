@@ -1,0 +1,59 @@
+{
+  "generation": "D1 v2 for training G1 v2 (curated mixing) (accumulated: all of D0 kept)",
+  "source_dataset": "dataset-0-v2",
+  "g0_checkpoint": "runs/g0_v2/final.pt (+ guided butterflies, sample_guided.py s=5, runs/noisy_classifier)",
+  "replacement_fraction_r": 0.25,
+  "accumulate": true,
+  "seed": 20261023,
+  "total": 23625,
+  "kept_from_d0v2": {
+    "aircraft": 6000,
+    "butterfly": 300,
+    "car": 6000,
+    "human": 300,
+    "marine_animal": 300,
+    "ship": 6000
+  },
+  "g0_samples": 4725,
+  "g0_selection": "curated: labeller v2 probability >= 0.9, per-class quotas {'aircraft': 1500, 'car': 1500, 'ship': 1500, 'butterfly': 75, 'marine_animal': 75, 'human': 75}",
+  "folder_counts": {
+    "aircraft": 7500,
+    "butterfly": 375,
+    "car": 7500,
+    "human": 375,
+    "marine_animal": 375,
+    "ship": 7500
+  },
+  "folder_by_source": {
+    "aircraft": {
+      "d0v2_real": 4800,
+      "d0v2_synthetic": 1200,
+      "g0v2": 1500
+    },
+    "butterfly": {
+      "d0v2_real": 240,
+      "d0v2_synthetic": 60,
+      "g0v2": 75
+    },
+    "car": {
+      "d0v2_real": 4800,
+      "d0v2_synthetic": 1200,
+      "g0v2": 1500
+    },
+    "human": {
+      "d0v2_real": 240,
+      "d0v2_synthetic": 60,
+      "g0v2": 75
+    },
+    "marine_animal": {
+      "d0v2_real": 240,
+      "d0v2_synthetic": 60,
+      "g0v2": 75
+    },
+    "ship": {
+      "d0v2_real": 4800,
+      "d0v2_synthetic": 1200,
+      "g0v2": 1500
+    }
+  }
+}

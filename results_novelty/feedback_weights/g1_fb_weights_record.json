@@ -1,0 +1,28 @@
+{
+  "labels": "results_novelty/g0_fb/labels_G0fb.csv",
+  "data_dir": "../data/dataset-1-accum-guided",
+  "target_dir": "../data/dataset-0-v2",
+  "previous": "../runs/feedback/g0_fb_weights.json",
+  "eta": 0.5,
+  "clip": [
+    0.7,
+    3.0
+  ],
+  "counted_images": 4130,
+  "amplification": {
+    "aircraft": 1.0167,
+    "butterfly": 0.6407,
+    "car": 1.022,
+    "human": 0.7932,
+    "marine_animal": 1.3881,
+    "ship": 0.9702
+  },
+  "weights": {
+    "aircraft": 0.9435,
+    "butterfly": 2.9836,
+    "car": 1.0429,
+    "human": 1.284,
+    "marine_animal": 0.7743,
+    "ship": 0.9115
+  }
+}

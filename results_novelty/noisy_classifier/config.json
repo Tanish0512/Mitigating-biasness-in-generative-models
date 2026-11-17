@@ -1,0 +1,114 @@
+{
+  "data_dir": "../data/dataset-0-v2",
+  "output_dir": "../runs/noisy_classifier",
+  "image_size": 64,
+  "base_channels": 64,
+  "timesteps": 1000,
+  "schedule": "cosine",
+  "steps": 30000,
+  "batch_size": 256,
+  "learning_rate": 0.0003,
+  "weight_decay": 0.05,
+  "validation_fraction": 0.1,
+  "evaluate_every": 5000,
+  "seed": 20261116,
+  "classes": [
+    "aircraft",
+    "butterfly",
+    "car",
+    "human",
+    "marine_animal",
+    "ship"
+  ],
+  "class_counts": {
+    "aircraft": 6000,
+    "butterfly": 300,
+    "car": 6000,
+    "human": 300,
+    "marine_animal": 300,
+    "ship": 6000
+  },
+  "parameters": 9849734,
+  "train_images": 17010,
+  "validation_images": 1890,
+  "evaluations": [
+    {
+      "step": 5000,
+      "seconds": 1470,
+      "balanced_accuracy_by_t": {
+        "0": 0.8817,
+        "100": 0.875,
+        "250": 0.8719,
+        "500": 0.8522,
+        "750": 0.8419,
+        "900": 0.6519,
+        "999": 0.1714
+      }
+    },
+    {
+      "step": 10000,
+      "seconds": 2924,
+      "balanced_accuracy_by_t": {
+        "0": 0.8967,
+        "100": 0.8969,
+        "250": 0.8997,
+        "500": 0.8833,
+        "750": 0.8589,
+        "900": 0.6961,
+        "999": 0.145
+      }
+    },
+    {
+      "step": 15000,
+      "seconds": 4378,
+      "balanced_accuracy_by_t": {
+        "0": 0.8819,
+        "100": 0.8764,
+        "250": 0.8914,
+        "500": 0.8578,
+        "750": 0.8447,
+        "900": 0.7275,
+        "999": 0.1769
+      }
+    },
+    {
+      "step": 20000,
+      "seconds": 5829,
+      "balanced_accuracy_by_t": {
+        "0": 0.8778,
+        "100": 0.8775,
+        "250": 0.8753,
+        "500": 0.865,
+        "750": 0.8414,
+        "900": 0.7317,
+        "999": 0.1258
+      }
+    },
+    {
+      "step": 25000,
+      "seconds": 7281,
+      "balanced_accuracy_by_t": {
+        "0": 0.8833,
+        "100": 0.8883,
+        "250": 0.8708,
+        "500": 0.8561,
+        "750": 0.8092,
+        "900": 0.7156,
+        "999": 0.1792
+      }
+    },
+    {
+      "step": 30000,
+      "seconds": 8732,
+      "balanced_accuracy_by_t": {
+        "0": 0.8839,
+        "100": 0.8781,
+        "250": 0.8772,
+        "500": 0.8786,
+        "750": 0.8472,
+        "900": 0.725,
+        "999": 0.1422
+      }
+    }
+  ]
+}

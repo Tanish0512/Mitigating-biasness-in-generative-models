@@ -1,0 +1,28 @@
+{
+  "labels": "results_g0_v2/classifier_new_p0.9/labels_G0v2.csv",
+  "data_dir": "../data/dataset-0-v2",
+  "target_dir": "../data/dataset-0-v2",
+  "previous": null,
+  "eta": 0.5,
+  "clip": [
+    0.7,
+    3.0
+  ],
+  "counted_images": 4295,
+  "amplification": {
+    "aircraft": 1.0385,
+    "butterfly": 0.1467,
+    "car": 0.8456,
+    "human": 0.7187,
+    "marine_animal": 1.1295,
+    "ship": 1.1661
+  },
+  "weights": {
+    "aircraft": 0.9566,
+    "butterfly": 2.5453,
+    "car": 1.0601,
+    "human": 1.1498,
+    "marine_animal": 0.9173,
+    "ship": 0.9027
+  }
+}

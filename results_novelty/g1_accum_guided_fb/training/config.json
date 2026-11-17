@@ -1,0 +1,43 @@
+{
+  "data_dir": "../data/dataset-1-accum-guided",
+  "output_dir": "../runs/g1_accum_guided_fb",
+  "image_size": 64,
+  "base_channels": 48,
+  "dropout": 0.1,
+  "timesteps": 1000,
+  "schedule": "cosine",
+  "steps": 150000,
+  "batch_size": 128,
+  "learning_rate": 0.0002,
+  "warmup_steps": 5000,
+  "ema_decay": 0.9999,
+  "grad_clip": 1.0,
+  "save_every": 10000,
+  "sample_every": 10000,
+  "sample_count": 64,
+  "log_every": 100,
+  "seed": 20261022,
+  "max_steps_this_run": null,
+  "class_weighting": "file",
+  "class_weights_file": "../runs/feedback/g1_fb_weights.json",
+  "world_size": 4,
+  "per_gpu_batch": 32,
+  "class_counts": {
+    "aircraft": 7500,
+    "butterfly": 375,
+    "car": 7500,
+    "human": 375,
+    "marine_animal": 375,
+    "ship": 7500
+  },
+  "total_images": 23625,
+  "parameters": 22401331,
+  "class_weights": {
+    "aircraft": 0.9435,
+    "butterfly": 2.9836,
+    "car": 1.0429,
+    "human": 1.284,
+    "marine_animal": 0.7743,
+    "ship": 0.9115
+  }
+}
