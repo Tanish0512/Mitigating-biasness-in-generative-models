@@ -1,15 +1,91 @@
-# Mitigating Higher-Density Bias in Generative Models
+# Mitigating Higher-Density Bias in Generative Models (branch `g0-retrain`)
+
+IE 643 course project, team **KiloBytes**: Neha Yadav (23B1807) and Tanish Sahu (23B1816).
+
+When a generative model is retrained on data that contains its own samples, it can drift towards the
+classes that were already frequent and lose the rare ones. This branch contains the final pipeline
+**D0 -> G0 -> D1 -> G1**, the bias measurement, two baseline mitigations and the novelty work
+(feedback-calibrated class weights, classifier-guided quota sampling and data accumulation), plus a
+Gradio test interface. The first version of the pipeline, built before the prep-presentation review,
+is kept at the end of this file.
+
+## Pipeline
+
+| Stage | What | Details |
+|---|---|---|
+| Source pool | 100k real 64x64 images, 10 classes | ImageNet, Cars196, FGVC Aircraft, Happywhale (Kaggle) |
+| **D0** | 18,900 images, 20:1 | aircraft / car / ship 6,000 each, butterfly / marine animal / human 300 each; 20% synthetic in every class (60M class-conditional DDPM) |
+| **G0** | unconditional DDPM | 22.4M-parameter U-Net, cosine schedule, 1,000 steps, 150k steps, batch 128, AdamW 2e-4, EMA 0.9999 |
+| **D1** | D0 mixed with G0 samples | replace 25% or 50% (unfiltered), curated (confident samples in D0 ratios) or accumulated (all of D0 + curated samples) |
+| **G1** | same recipe as G0 | trained on each D1 |
+| Measurement | labeller v2 | logistic regression on frozen DINOv2 + CLIP features with a background class (99.98% on unseen real images); count only p >= 0.9 |
+
+Metrics: log2 density odds ratio (0 = D0's balance, > 0 favours high-density classes), per-class
+amplification A_c = q_c / p_c, HDAI, TVD, DINOv2 coverage, copy check, and 95% bootstrap intervals.
+
+## Main results (4,750 samples per model, same noise seeds)
+
+| Model | log2 DOR [95% CI] | butterfly A | not counted | TVD | coverage hi / lo |
+|---|---|---|---|---|---|
+| G0 baseline | +0.61 [+0.38, +0.89] | 0.15 | 9.6% | 0.067 | 0.33 / 0.26 |
+| G1, 25% mixing | +0.97 [+0.70, +1.29] | 0.18 | 13.0% | 0.044 | 0.26 / 0.22 |
+| G1, 50% mixing | +0.85 [+0.60, +1.13] | 0.06 | 14.1% | 0.084 | 0.25 / 0.21 |
+| G0 with `n^-1/2` loss weights | -1.50 [-1.63, -1.37] | 0.73 | 14.9% | 0.109 | 0.23 / 0.52 |
+| G1 curated + `n^-1/2` | -1.70 [-1.82, -1.57] | 0.48 | 16.6% | 0.114 | 0.20 / 0.46 |
+| G1 curated only | +0.50 [+0.27, +0.76] | 0.06 | 9.0% | 0.109 | 0.25 / 0.21 |
+| **G0 feedback weights (novelty)** | **+0.09 [-0.10, +0.32]** | 0.64 | 13.1% | **0.018** | 0.29 / 0.31 |
+| G1 accumulated + guided (novelty) | +1.04 [+0.78, +1.35] | 0.10 | **8.6%** | 0.081 | 0.28 / 0.21 |
+| **G1 full pipeline (novelty)** | **+0.30 [+0.09, +0.52]** | **0.86** | 10.3% | 0.036 | 0.27 / **0.33** |
+
+* Recursive mixing amplifies the bias and the rarest class collapses; HDAI (max 1.05 here) hides it.
+* Fixed `n^-1/2` weights bring the rare classes back but over-correct; curation alone does not save them.
+* The bias is learnt in training: even perfectly balanced, accumulated or guided data leave it in place.
+* **Feedback-calibrated weights** (`w_c <- w_c * A_c^-0.5`, measured on the previous generation)
+  remove the G0 bias and, on the accumulated guided D1, restore butterfly from 0.10 to 0.86 of its share
+  without over-correcting.
+
+## Where things are
+
+| Path | Contents |
+|---|---|
+| [`README_dataset_v2.md`](README_dataset_v2.md) | Dataset construction, all scripts, commands to reproduce every run, and the novelty commands |
+| [`LOG_dataset_v2.md`](LOG_dataset_v2.md) | Step-by-step log of the rebuilt pipeline |
+| `results_g0_v2/`, `results_g1_v2/`, `results_g1_v2_r50/` | G0 and G1 labels, thresholds, class grids, training configs and loss curves |
+| `results_mitigation/` | Weighted-loss and curated-mixing models |
+| `results_novelty/` | Feedback weights, noise-aware classifier, guided sampling, accumulated D1, bootstrap intervals, filter pass rates, coverage and figures |
+| `train_diffusion.py`, `sample_diffusion.py` | Generator training (incl. `--class-weighting inv_sqrt / file`) and sampling |
+| `build_dataset0_v2.py`, `build_dataset1_v2.py` | D0 and D1 builders (`--curate`, `--accumulate`) |
+| `train_labeller.py`, `apply_labeller.py`, `evaluate_v2.py`, `novelty_checks.py` | Labeller and evaluation |
+| `make_feedback_weights.py`, `train_noisy_classifier.py`, `sample_guided.py` | Novelty methods |
+| `demo_app.py` | Test interface |
+
+Datasets, checkpoints and full sample folders are not in git.
+
+## Test interface
+
+```bash
+CUDA_DEVICE_ORDER=PCI_BUS_ID python demo_app.py --gpus 5,1 --labeller-gpu 0
+# open http://<server>:7860, or tunnel: ssh -L 7860:localhost:7860 <user>@<server>
+```
+
+Tabs: **Live generation** (pick models, image count and seed; every model starts from the same noise;
+class counts, bias metrics and galleries), **Full evaluation** (stored 4,750-image results of all eight
+models and a per-class image browser) and **Pipeline** (datasets and metric definitions).
+
+## First version of the pipeline (before the prep-presentation review)
+
+The sections below document the original 10-class pipeline on the `main` branch, kept for reference.
 
 See [PROJECT_LOG.md](PROJECT_LOG.md) for model parameters, recorded metrics,
 dataset history, current class counts, commands, and planned experiments.
 The current merged `dataset-0` contains **19,000 images**; the 15,200-image
 figures in the preparation history below describe the source subset before merging.
 
-## Project Overview
+### Project Overview
 
 This project investigates whether mixing synthetic images into diffusion-model training amplifies a model's preference for higher-density object classes, and develops methods to measure and mitigate that bias. The agreed study ends at **G1**, covering **G0 and G1** with one recursive training step.
 
-## Project Description
+### Project Description
 
 The team will create a controlled dataset split in which some object classes have approximately equal, relatively high sample counts, while other classes have fewer or very few samples. The study will use real and synthetic/generated image datasets that contain overlapping object categories and suitable class-distribution differences. Class definitions, sample counts, and dataset sources should be documented.
 
@@ -32,7 +108,7 @@ At both levels, G0 and G1, the team will:
 
 The analysis should show how bias changes from G0 to G1 and investigate how synthetic-data mixing contributes to that change. Baseline and mitigated comparisons stay within these two levels.
 
-## Expected Deliverables
+### Expected Deliverables
 
 1. **Mixed real and synthetic dataset** — A controlled dataset containing real and synthetic samples from higher- and lower-density object classes, with class-wise sample distributions clearly documented.
 2. **Two-level recursive diffusion pipeline** — G0 trained on D0, followed by generation, D1 construction, and G1 training. The recursive pipeline ends at G1.
@@ -40,7 +116,7 @@ The analysis should show how bias changes from G0 to G1 and investigate how synt
 4. **Synthetic-mixing bias analysis** — An analysis of how varying the amount of synthetic data at each recursive level affects higher-density bias, supported by class-wise distribution results.
 5. **Bias mitigation method** — A mechanism to reduce higher-density bias, evaluated against the baseline at G0 and G1 using the proposed metrics.
 
-## Final Submission Requirements
+### Final Submission Requirements
 
 The final submission is expected to include:
 
@@ -51,7 +127,7 @@ The final submission is expected to include:
 5. **Project completion by the intensive assessment**, including all required work described in the project brief.
 
 
-## Generation-zero training
+### Generation-zero training
 
 `dataset-0/dog` was visually reviewed at its original 64×64 resolution. Of 800
 images, 166 were moved outside the training dataset to `dataset-0-excluded/dog`:
