@@ -44,27 +44,43 @@ amplification A_c = q_c / p_c, HDAI, TVD, DINOv2 coverage, copy check, and 95% b
   remove the G0 bias and, on the accumulated guided D1, restore butterfly from 0.10 to 0.86 of its share
   without over-correcting.
 
-## Where things are
+## Repository structure
 
-| Path | Contents |
-|---|---|
-| [`README_dataset_v2.md`](README_dataset_v2.md) | Dataset construction, all scripts, commands to reproduce every run, and the novelty commands |
-| [`LOG_dataset_v2.md`](LOG_dataset_v2.md) | Step-by-step log of the rebuilt pipeline |
-| `results_g0_v2/`, `results_g1_v2/`, `results_g1_v2_r50/` | G0 and G1 labels, thresholds, class grids, training configs and loss curves |
-| `results_mitigation/` | Weighted-loss and curated-mixing models |
-| `results_novelty/` | Feedback weights, noise-aware classifier, guided sampling, accumulated D1, bootstrap intervals, filter pass rates, coverage and figures |
-| `train_diffusion.py`, `sample_diffusion.py` | Generator training (incl. `--class-weighting inv_sqrt / file`) and sampling |
-| `build_dataset0_v2.py`, `build_dataset1_v2.py` | D0 and D1 builders (`--curate`, `--accumulate`) |
-| `train_labeller.py`, `apply_labeller.py`, `evaluate_v2.py`, `novelty_checks.py` | Labeller and evaluation |
-| `make_feedback_weights.py`, `train_noisy_classifier.py`, `sample_guided.py` | Novelty methods |
-| `demo_app.py` | Test interface |
+```
+.
+├── README.md                  this file
+├── requirements.txt
+├── docs/
+│   ├── README_dataset_v2.md   dataset construction, every script, commands to reproduce all runs
+│   ├── LOG_dataset_v2.md      step-by-step log of the rebuilt pipeline
+│   └── PROJECT_LOG.md         log of the first version
+├── src/                       code of the final pipeline (run from the repository root)
+│   ├── data/                  build_dataset0_v2.py, build_dataset1_v2.py (--curate, --accumulate),
+│   │                          generate_synthetic.py, diagnose_quality.py
+│   ├── generator/             train_diffusion.py (U-Net DDPM, --class-weighting), sample_diffusion.py
+│   ├── evaluation/            labeller v2 (train_labeller.py, apply_labeller.py, compare_labellers.py),
+│   │                          metrics (evaluate_v2.py, evaluate_features.py, evaluate_clip.py,
+│   │                          threshold_metrics.py, novelty_checks.py)
+│   ├── novelty/               make_feedback_weights.py, train_noisy_classifier.py, sample_guided.py
+│   └── interface/             demo_app.py (Gradio test interface)
+├── results/                   labels, configs, loss curves, grids and summaries of every model
+│   ├── g0_v2/                 G0
+│   ├── g1_v2_r25/             G1, 25% mixing
+│   ├── g1_v2_r50/             G1, 50% mixing
+│   ├── mitigation/            weighted-loss and curated-mixing models
+│   └── novelty/               feedback weights, guided sampling, accumulated D1, bootstrap checks, figures
+└── first_version/             scripts of the first 10-class pipeline (see the last section)
+```
 
-Datasets, checkpoints and full sample folders are not in git.
+Scripts are run from the repository root, for example
+`python src/generator/train_diffusion.py --data-dir ../data/dataset-0-v2 --output-dir ../runs/g0_v2`;
+datasets (`../data`), checkpoints (`../runs`) and full sample folders (`../results`) live next to the
+repository and are not in git.
 
 ## Test interface
 
 ```bash
-CUDA_DEVICE_ORDER=PCI_BUS_ID python demo_app.py --gpus 5,1 --labeller-gpu 0
+CUDA_DEVICE_ORDER=PCI_BUS_ID python src/interface/demo_app.py --gpus 5,1 --labeller-gpu 0
 # open http://<server>:7860, or tunnel: ssh -L 7860:localhost:7860 <user>@<server>
 ```
 
@@ -75,8 +91,9 @@ models and a per-class image browser) and **Pipeline** (datasets and metric defi
 ## First version of the pipeline (before the prep-presentation review)
 
 The sections below document the original 10-class pipeline on the `main` branch, kept for reference.
+Its scripts are in `first_version/`.
 
-See [PROJECT_LOG.md](PROJECT_LOG.md) for model parameters, recorded metrics,
+See [PROJECT_LOG.md](docs/PROJECT_LOG.md) for model parameters, recorded metrics,
 dataset history, current class counts, commands, and planned experiments.
 The current merged `dataset-0` contains **19,000 images**; the 15,200-image
 figures in the preparation history below describe the source subset before merging.
@@ -150,7 +167,7 @@ Train the compact unconditional attention DDPM with EMA. The class folders
 provide the image mixture, while class labels are ignored by the model:
 
 ```bash
-python train-g0.py --epochs 50
+python first_version/train-g0.py --epochs 50
 ```
 
 Defaults: `dataset-0`, 64×64 RGB, 32 base channels (versus 64 in `train.py`),
@@ -172,7 +189,7 @@ optimizer/scaler states, architecture arguments, and class order.
 Resume using the same architecture, diffusion settings, and class folders:
 
 ```bash
-python train-g0.py --resume ddpm_g0/checkpoint_0050.pt --epochs 100
+python first_version/train-g0.py --resume ddpm_g0/checkpoint_0050.pt --epochs 100
 ```
 
 For a class-conditional compact model with the same training defaults, use:
@@ -190,7 +207,7 @@ compact architecture as G0. The command below is an example, not the saved
 700-epoch run’s configuration:
 
 ```bash
-python train-g1.py --epochs 50 --batch-size 32 --device auto
+python first_version/train-g1.py --epochs 50 --batch-size 32 --device auto
 ```
 
 The default output is `ddpm_g1/`. G1 starts with fresh weights; resuming is
@@ -199,7 +216,7 @@ allowed only from a checkpoint marked as G1.
 Generate an unlabeled pool from an unconditional G0 checkpoint using:
 
 ```bash
-python generate_density_samples.py --checkpoint ddpm_g0/checkpoint_0050.pt --output-dir generated_g0 --batch-size 512
+python first_version/generate_density_samples.py --checkpoint ddpm_g0/checkpoint_0050.pt --output-dir generated_g0 --batch-size 512
 ```
 
 Evaluate an unconditional G0 checkpoint by generating 1,000 images, classifying
@@ -223,7 +240,7 @@ predictions only determine `ImageFolder` placement; there is no confidence
 filter or class balancing, and G1 remains unconditional:
 
 ```bash
-python build_dataset1.py --g0-checkpoint models/g0.pt \
+python first_version/build_dataset1.py --g0-checkpoint models/g0.pt \
   --classifier-checkpoint models/checkpoint_best.pt --r 0.25
 ```
 
