@@ -15,6 +15,11 @@ each class gets r * total * (its dataset-0-v2 share) of them, so the G0 part has
 D0's class ratios and no failed images. The run stops and reports the shortfall
 when a class has too few confident samples.
 
+``--accumulate`` keeps all of dataset-0-v2, including every real rare-class
+image, and adds ``r * |D0|`` G0 samples, so D1 grows instead of replacing real
+data (Gerstgrasser et al., 2024). Combine it with ``--curate`` to fill the
+quotas from a guided sample pool (sample_guided.py).
+
 ``manifest.csv`` lists every image with its folder, source (``d0v2_real``,
 ``d0v2_synthetic`` or ``g0v2``), source path and, for G0 images, the labeller's
 label and probability.
@@ -47,6 +52,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--r", type=float, default=0.25, help="Fraction of D1 replaced by G0 samples")
     parser.add_argument("--g0-checkpoint", default="runs/g0_v2/final.pt", help="Recorded in summary.json")
     parser.add_argument("--curate", action="store_true", help="Confident G0 samples in D0's class ratios")
+    parser.add_argument("--accumulate", action="store_true",
+                        help="Keep all of D0 and add r * |D0| G0 samples instead of replacing a fraction r")
     parser.add_argument("--threshold", type=float, default=0.9, help="Minimum labeller probability with --curate")
     parser.add_argument("--seed", type=int, default=20261023)
     return parser.parse_args()
@@ -64,14 +71,15 @@ def main() -> None:
     rows, kept = [], Counter()
     for name in sorted({r["class"] for r in d0}):
         members = [r for r in d0 if r["class"] == name]
-        for r in rng.sample(members, round(len(members) * (1 - args.r))):
+        keep = members if args.accumulate else rng.sample(members, round(len(members) * (1 - args.r)))
+        for r in keep:
             source = "d0v2_synthetic" if r["source"].startswith("synthetic") else "d0v2_real"
             rows.append((name, r["filename"], source, f"dataset-0-v2/{name}/{r['filename']}", "", ""))
             kept[name] += 1
 
     with args.labels.open(newline="", encoding="utf-8") as handle:
         labels = list(csv.DictReader(handle))
-    needed = total - len(rows)
+    needed = round(total * args.r) if args.accumulate else total - len(rows)
     if args.curate:
         d0_counts = Counter(r["class"] for r in d0)
         exact = {c: needed * n / total for c, n in d0_counts.items()}
@@ -105,14 +113,16 @@ def main() -> None:
     by_folder = Counter(r[0] for r in rows)
     by_source = Counter((r[0], r[2]) for r in rows)
     summary = {
-        "generation": "D1 v2 for training G1 v2" + (" (curated mixing)" if args.curate else ""),
+        "generation": "D1 v2 for training G1 v2" + (" (curated mixing)" if args.curate else "")
+                      + (" (accumulated: all of D0 kept)" if args.accumulate else ""),
         "source_dataset": "dataset-0-v2",
         "g0_checkpoint": args.g0_checkpoint,
         "replacement_fraction_r": args.r,
+        "accumulate": args.accumulate,
         "seed": args.seed,
         "total": len(rows),
         "kept_from_d0v2": dict(kept),
-        "g0_samples": total - sum(kept.values()),
+        "g0_samples": len(rows) - sum(kept.values()),
         "g0_selection": selection,
         "folder_counts": dict(sorted(by_folder.items())),
         "folder_by_source": {f: {s: n for (ff, s), n in by_source.items() if ff == f} for f in sorted(by_folder)},
