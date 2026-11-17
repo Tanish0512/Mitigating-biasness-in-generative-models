@@ -2,6 +2,8 @@
 
 IE 643 course project, team **KiloBytes**: Neha Yadav (23B1807) and Tanish Sahu (23B1816).
 
+**Full project report:** [docs/KiloBytes_IE643_Full_Project_Report.pdf](docs/KiloBytes_IE643_Full_Project_Report.pdf)
+
 When a generative model is retrained on data that contains its own samples, it can drift towards the
 classes that were already frequent and lose the rare ones. This branch contains the final pipeline
 **D0 -> G0 -> D1 -> G1**, the bias measurement, two baseline mitigations and the novelty work
@@ -51,6 +53,7 @@ amplification A_c = q_c / p_c, HDAI, TVD, DINOv2 coverage, copy check, and 95% b
 ├── README.md                  this file
 ├── requirements.txt
 ├── docs/
+│   ├── KiloBytes_IE643_Full_Project_Report.pdf   full project report (intensive + novelty phase)
 │   ├── README_dataset_v2.md   dataset construction, every script, commands to reproduce all runs
 │   ├── LOG_dataset_v2.md      step-by-step log of the rebuilt pipeline
 │   └── PROJECT_LOG.md         log of the first version
