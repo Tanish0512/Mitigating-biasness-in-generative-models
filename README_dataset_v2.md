@@ -60,7 +60,11 @@ G0 v2 training and evaluation (results and commands in
 | `apply_labeller.py` | Labels a folder of generated images with labeller v2 |
 | `threshold_metrics.py` | Counts and bias metrics at labeller thresholds 0.6-0.9 from an `apply_labeller.py` CSV |
 | `diagnose_quality.py` | Sharpness and classifier checks on dataset-0 that led to the class choice |
-| `demo_app.py` | Test interface (Gradio): live generation from all six models with labels and bias metrics against D0, the stored 4,750-image results with an image browser, and an upload tab that labels any images |
+| `demo_app.py` | Test interface (Gradio): live generation from all eight models with labels and bias metrics against D0 and the stored 4,750-image results with an image browser |
+| `make_feedback_weights.py` | Novelty: per-class loss weights from a model's measured class amplification, `w_c <- w_c * A_c^-eta`, clipped and normalised |
+| `train_noisy_classifier.py` | Novelty: noise-aware classifier `p(y \| x_t, t)` on D0 for classifier guidance |
+| `sample_guided.py` | Novelty: classifier-guided samples of one class from an unchanged generator |
+| `novelty_checks.py` | Bootstrap 95% intervals of log2 DOR and per-class amplification, and the confidence filter's per-class pass rate |
 
 ### Test interface
 
@@ -68,14 +72,13 @@ Needs `pip install gradio`, the six `runs/*/final.pt`, labeller v2 (`results/lab
 and the stored sample folders under `results/`.
 
 ```bash
-CUDA_DEVICE_ORDER=PCI_BUS_ID python demo_app.py --gpus 3,4,0,1,5,3 --labeller-gpu 2
+CUDA_DEVICE_ORDER=PCI_BUS_ID python demo_app.py --gpus 5,1 --labeller-gpu 0
 # open http://<server>:7860, or tunnel: ssh -L 7860:localhost:7860 <user>@<server>
 ```
 
 Live sampling runs the full 1000 denoising steps: about 80 s for 100 images from three models
 on three A6000s. Small live runs are noisy, so the live table also shows each model's log2 DOR
-on its 4,750 stored images. `data/demo_test_images/` holds 5 real D0 images per class for the
-upload tab.
+on its 4,750 stored images.
 
 ## Reproduce
 
@@ -107,3 +110,64 @@ image, its class, density group, source (`real_d0`, `real_pool`, `synthetic_d0`,
 Note: `generate_samples.py` on `main` imports the U-Net from `train_ddpm.py`,
 which does **not** match `checkpoint_0550.pt` (that checkpoint was trained with
 `train.py`'s attention U-Net, base 80). `generate_synthetic.py` uses `train.py`.
+
+## Novelty assessment
+
+The intensive phase showed that G0 is already biased, that fixed `n^-1/2` loss weights over-correct and
+that curated mixing does not save the rarest class. Two checks located the cause: the curated D1 had
+exactly D0's class ratios yet its G1 drew 4 butterflies, and the `p >= 0.9` filter keeps 93-96% of
+predicted vehicles but only 32% of predicted butterflies. The bias is learnt in training, so we tested:
+
+* **C. Feedback-calibrated class weights**: each generation's loss weights are corrected by the
+  previous model's measured amplification, `w_c <- w_c * A_c^-0.5`, clipped to [0.7, 3] and normalised
+  to mean 1 (`train_diffusion.py --class-weighting file`).
+* **B. Classifier-guided quota sampling**: a noise-aware classifier steers the unchanged baseline G0
+  towards butterflies (scale 5; 0.2% -> 18.7% confident) so curation can fill its quota.
+* **A. Accumulation**: D1 keeps all of D0 and adds 4,725 curated samples (23,625 images).
+
+All runs use the same recipe on 4x A6000 (32 per GPU, about 4.1 h each). Results on 4,750 samples per
+model, labeller v2 at p >= 0.9, 95% bootstrap intervals:
+
+| Model | log2 DOR [95% CI] | butterfly | marine | human | not counted | TVD | coverage hi / lo |
+|---|---|---|---|---|---|---|---|
+| G0 baseline | +0.61 [+0.38, +0.89] | 0.15 | 1.13 | 0.72 | 9.6% | 0.067 | 0.33 / 0.26 |
+| G0 `n^-1/2` weights | -1.50 [-1.63, -1.37] | 0.73 | 4.04 | 3.04 | 14.9% | 0.109 | 0.23 / 0.52 |
+| **G0 feedback (C)** | **+0.09 [-0.10, +0.32]** | 0.64 | 1.39 | 0.79 | 13.1% | **0.018** | 0.29 / 0.31 |
+| G1 25% mixing | +0.97 [+0.70, +1.29] | 0.18 | 0.47 | 0.92 | 13.0% | 0.044 | 0.26 / 0.22 |
+| G1 curated only | +0.50 [+0.27, +0.76] | 0.06 | 1.69 | 0.41 | 9.0% | 0.109 | 0.25 / 0.21 |
+| **G1 A+B** | +1.04 [+0.78, +1.35] | 0.10 | 0.89 | 0.51 | **8.6%** | 0.081 | 0.28 / 0.21 |
+| **G1 A+B+C** | **+0.30 [+0.09, +0.52]** | **0.86** | 0.55 | **1.05** | 10.3% | 0.036 | 0.27 / **0.33** |
+
+Feedback weights remove the G0 bias without over-correcting; data fixes alone (A+B) reduce failures but
+not the bias; adding C on the same D1 restores butterfly from 0.10 to 0.86 of its share. Marine animal
+falls to 0.55 in G1 (feedback-loop over-correction). Labels, configs, loss curves, weights, bias checks,
+coverage and figures are in `results_novelty/`.
+
+```bash
+# C at G0: weights from baseline G0, then train on 4 GPUs
+python make_feedback_weights.py --labels results_g0_v2/classifier_new_p0.9/labels_G0v2.csv \
+    --data-dir ../data/dataset-0-v2 --output ../runs/feedback/g0_fb_weights.json
+CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node 4 train_diffusion.py --data-dir ../data/dataset-0-v2 \
+    --output-dir ../runs/g0_fb --class-weighting file --class-weights-file ../runs/feedback/g0_fb_weights.json
+
+# B: noise-aware classifier and guided butterflies from baseline G0
+python train_noisy_classifier.py --data-dir ../data/dataset-0-v2 --output-dir ../runs/noisy_classifier
+python sample_guided.py --checkpoint ../runs/g0_v2/final.pt --classifier ../runs/noisy_classifier/final.pt \
+    --class-name butterfly --scale 5 --count 1250 --output-dir ../results/guided_g0_v2
+
+# A: accumulated, curated D1 (pool = unguided G0 samples + guided butterflies)
+python build_dataset1_v2.py --d0-dir ../data/dataset-0-v2 --g0-samples ../results/pool_g0_v2_guided \
+    --labels ../results/pool_g0_v2_guided_labels.csv --output-dir ../data/dataset-1-accum-guided \
+    --r 0.25 --accumulate --curate
+
+# G1 A+B+C: weights updated from G0 feedback's measurement
+python make_feedback_weights.py --labels results_novelty/g0_fb/labels_G0fb.csv \
+    --data-dir ../data/dataset-1-accum-guided --target-dir ../data/dataset-0-v2 \
+    --previous ../runs/feedback/g0_fb_weights.json --output ../runs/feedback/g1_fb_weights.json
+CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node 4 train_diffusion.py --data-dir ../data/dataset-1-accum-guided \
+    --output-dir ../runs/g1_accum_guided_fb --class-weighting file --class-weights-file ../runs/feedback/g1_fb_weights.json
+
+# Intervals and filter pass rates
+python novelty_checks.py --data-dir ../data/dataset-0-v2 --output-dir ../results/novelty_checks_all \
+    --model G0=results_g0_v2/classifier_new_p0.9/labels_G0v2.csv --model G1_ABC=results_novelty/g1_accum_guided_fb/labels_G1agfb.csv
+```

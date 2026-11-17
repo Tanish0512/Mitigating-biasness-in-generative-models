@@ -1,12 +1,11 @@
-"""Test interface for the project: generate live from the six trained models and measure their bias.
+"""Test interface for the project: generate live from the eight trained models and measure their bias.
 
 Tabs:
   1. Live generation - pick models, image count and seed; every model starts from the same noise,
      the labeller v2 counts the classes, and the bias metrics are compared with D0.
-  2. Full evaluation - the stored 4,750-image results for all six models, with a browser of the
+  2. Full evaluation - the stored 4,750-image results for all eight models, with a browser of the
      images each model drew for a chosen class.
-  3. Audit images - upload any images (real test images or generated ones) and label them.
-  4. Pipeline - what each dataset and model is.
+  3. Pipeline - what each dataset and model is.
 
 Live images are fresh draws: 1000 denoising steps take about 60 s per 100 images on an A6000, so
 keep live runs small and use the Full evaluation tab for the 4,750-image numbers.
@@ -63,8 +62,13 @@ MODELS = {
                                           "curated 25% D1 with class-weighted loss"),
     "G1 curated mixing only": ("g1_v2_curated", "samples_g1_v2_curated", "repo/results_mitigation/g1_curated/labels_G1v2cur.csv",
                                "curated 25% D1 (confident G0 samples in D0 ratios), plain loss"),
+    "G0 feedback weights (novelty)": ("g0_fb", "samples_g0_fb", "repo/results_novelty/g0_fb/labels_G0fb.csv",
+                                      "D0 with per-class weights from G0's measured amplification"),
+    "G1 full pipeline (novelty)": ("g1_accum_guided_fb", "samples_g1_accum_guided_fb",
+                                   "repo/results_novelty/g1_accum_guided_fb/labels_G1agfb.csv",
+                                   "accumulated D1 (all D0 + guided, curated G0 samples) with feedback weights"),
 }
-DEFAULT_LIVE = ["G0 (baseline)", "G1, 25% mixing", "G1 mitigated (curated + weighted)"]
+DEFAULT_LIVE = ["G0 (baseline)", "G1, 25% mixing", "G1 full pipeline (novelty)"]
 
 
 def parse_args() -> argparse.Namespace:
@@ -170,7 +174,7 @@ def share_chart(rows: dict[str, dict], title: str):
     fig, ax = plt.subplots(figsize=(10, 3.8), dpi=110)
     names = list(rows)
     width = 0.8 / max(len(names), 1)
-    colors = ["#4C72B0", "#DD8452", "#C44E52", "#55A868", "#8172B3", "#937860"]
+    colors = ["#4C72B0", "#DD8452", "#C44E52", "#55A868", "#8172B3", "#937860", "#DA8BC3", "#2F9E9E"]
     for i, name in enumerate(names):
         r = rows[name]
         total = sum(r[c] for c in CLASSES) or 1
@@ -212,6 +216,7 @@ PIPELINE_MD = f"""
 | **D1, 25%** | 4,500 real + 4,725 G0 samples (unfiltered) | 225 real each | G0 decides the class mix of the synthetic part |
 | **D1, 50%** | 3,000 real + 9,450 G0 samples (unfiltered) | 150 real each | twice as much feedback |
 | **D1, curated** | 4,500 real + 1,500 confident G0 each | 225 real + 75 confident G0 each | exactly D0's class ratio |
+| **D1, accumulated + guided** | all 6,000 + 1,500 confident G0 each | all 300 + 75 confident G0 each | 23,625 images; butterflies from classifier guidance |
 
 All generators are the same unconditional DDPM (22.4M-parameter U-Net, cosine schedule, 150k steps, EMA).
 Class labels are never given to the generators.
@@ -224,6 +229,11 @@ Class labels are never given to the generators.
 
 **Mitigations**: (1) class-weighted loss w_c ∝ n_c^-1/2 (high 0.86, low 3.84); (2) curated mixing:
 feed back only confident G0 samples in D0's class ratios.
+
+**Novelty**: (3) feedback-calibrated weights w_c ← w_c · A_c^-0.5, clipped to [0.7, 3], where A_c is the previous
+model's measured class amplification (G0: butterfly 2.55; G1: butterfly 2.98); (4) classifier-guided quota sampling:
+a noise-aware classifier steers the baseline G0 towards classes it rarely draws (butterfly), so curation has enough
+confident samples; (5) accumulation: D1 keeps all of D0 and adds the synthetic images.
 """
 
 
@@ -273,17 +283,6 @@ def main() -> None:
         return hits[:120], f"**{name}** drew **{len(hits)}** confident {cls.replace('_', ' ')} images out of {EVAL_IMAGES} " \
                             f"(about {EVAL_IMAGES * D0_SHARES[cls]:.0f} if it kept its D0 share)."
 
-    def audit(files, threshold):
-        if not files:
-            raise gr.Error("Upload some images first.")
-        images = [Image.open(f).convert("RGB").resize((64, 64), Image.BICUBIC) for f in files]
-        labels = labeller(images)
-        calls = [counted(l, p, threshold) for l, p in labels]
-        row = bias_metrics(calls)
-        gallery = [(im, f"{c.replace('_', ' ')} ({p:.2f})" if c != UNCOUNTED else f"not counted: {l} ({p:.2f})")
-                   for im, (l, p), c in zip(images, labels, calls)]
-        return table({"uploaded images": row}), gallery
-
     with gr.Blocks(title="KiloBytes: density bias in recursive generative models") as demo:
         gr.Markdown("# Higher-density bias under synthetic-data mixing\n"
                     "IE 643 course project, team KiloBytes: Neha Yadav (23b1807), Tanish Sahu (23b1816). "
@@ -313,16 +312,6 @@ def main() -> None:
             browse_note = gr.Markdown()
             browse_gallery = gr.Gallery(columns=12, height=480, object_fit="contain")
             browse_button.click(browse, [browse_model, browse_class], [browse_gallery, browse_note])
-        with gr.Tab("Audit images"):
-            gr.Markdown("Upload any images (real test images or a generator's output). Each is resized to 64×64, "
-                        "labelled by labeller v2, and the class mix is compared with D0.")
-            with gr.Row():
-                files = gr.File(file_count="multiple", file_types=["image"], label="Images")
-                audit_threshold = gr.Slider(0.5, 0.99, value=0.9, step=0.01, label="Confidence to count an image")
-            audit_button = gr.Button("Label and measure", variant="primary")
-            audit_table = gr.Dataframe(headers=TABLE_COLUMNS, wrap=True)
-            audit_gallery = gr.Gallery(columns=10, height=420, object_fit="contain")
-            audit_button.click(audit, [files, audit_threshold], [audit_table, audit_gallery])
         with gr.Tab("Pipeline"):
             gr.Markdown(PIPELINE_MD)
             workflow = ROOT / "report/figures/workflow.png"
