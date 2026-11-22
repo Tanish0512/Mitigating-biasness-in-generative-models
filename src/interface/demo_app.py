@@ -244,7 +244,9 @@ feed back only confident G0 samples in D0's class ratios.
 **Novelty**: (3) feedback-calibrated weights w_c ← w_c · A_c^-0.5, clipped to [0.7, 3], where A_c is the previous
 model's measured class amplification (G0: butterfly 2.55; G1: butterfly 2.98); (4) classifier-guided quota sampling:
 a noise-aware classifier steers the baseline G0 towards classes it rarely draws (butterfly), so curation has enough
-confident samples; (5) accumulation: D1 keeps all of D0 and adds the synthetic images.
+confident samples; (5) accumulation: D1 keeps all of D0 and adds the synthetic images; (6) fixed-rule control (added
+after instructor feedback): a mild weight w_c ∝ n_c^-0.15 at G0 and on the curated G1, compared with feedback weights on
+the same curated D1 (the three models marked n^-0.15 / curated + feedback).
 """
 
 
@@ -325,7 +327,7 @@ def main() -> None:
             browse_button.click(browse, [browse_model, browse_class], [browse_gallery, browse_note])
         with gr.Tab("Pipeline"):
             gr.Markdown(PIPELINE_MD)
-            workflow = ROOT / "report/figures/workflow.png"
+            workflow = ROOT / "report/figures/workflow_demo.png"
             if workflow.is_file():
                 gr.Image(str(workflow), show_label=False)
 
