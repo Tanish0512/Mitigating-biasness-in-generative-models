@@ -1,0 +1,490 @@
+{
+  "real held-out": {
+    "aircraft": {
+      "count": 1508,
+      "precision": 0.924,
+      "density": 1.033,
+      "coverage": 0.773
+    },
+    "car": {
+      "count": 1508,
+      "precision": 0.91,
+      "density": 0.95,
+      "coverage": 0.748
+    },
+    "ship": {
+      "count": 1508,
+      "precision": 0.878,
+      "density": 0.996,
+      "coverage": 0.755
+    },
+    "butterfly": {
+      "count": 75,
+      "precision": 0.933,
+      "density": 0.845,
+      "coverage": 0.724
+    },
+    "marine_animal": {
+      "count": 75,
+      "precision": 0.907,
+      "density": 1.019,
+      "coverage": 0.68
+    },
+    "human": {
+      "count": 75,
+      "precision": 0.96,
+      "density": 1.152,
+      "coverage": 0.729
+    }
+  },
+  "G0": {
+    "aircraft": {
+      "count": 1416,
+      "precision": 0.816,
+      "density": 0.569,
+      "coverage": 0.333,
+      "amplification": 1.038,
+      "pass_rate": 0.962
+    },
+    "car": {
+      "count": 1153,
+      "precision": 0.832,
+      "density": 0.655,
+      "coverage": 0.289,
+      "amplification": 0.845,
+      "pass_rate": 0.933
+    },
+    "ship": {
+      "count": 1591,
+      "precision": 0.79,
+      "density": 0.646,
+      "coverage": 0.372,
+      "amplification": 1.167,
+      "pass_rate": 0.931
+    },
+    "butterfly": {
+      "count": 10,
+      "precision": 1.0,
+      "density": 0.96,
+      "coverage": 0.133,
+      "amplification": 0.146,
+      "pass_rate": 0.323
+    },
+    "marine_animal": {
+      "count": 77,
+      "precision": 0.766,
+      "density": 0.561,
+      "coverage": 0.311,
+      "amplification": 1.127,
+      "pass_rate": 0.428
+    },
+    "human": {
+      "count": 49,
+      "precision": 0.898,
+      "density": 0.629,
+      "coverage": 0.347,
+      "amplification": 0.717,
+      "pass_rate": 0.925
+    }
+  },
+  "G0_inv": {
+    "aircraft": {
+      "count": 1240,
+      "precision": 0.777,
+      "density": 0.434,
+      "coverage": 0.203,
+      "amplification": 0.966,
+      "pass_rate": 0.94
+    },
+    "car": {
+      "count": 904,
+      "precision": 0.772,
+      "density": 0.562,
+      "coverage": 0.196,
+      "amplification": 0.705,
+      "pass_rate": 0.9
+    },
+    "ship": {
+      "count": 1397,
+      "precision": 0.764,
+      "density": 0.548,
+      "coverage": 0.282,
+      "amplification": 1.089,
+      "pass_rate": 0.916
+    },
+    "butterfly": {
+      "count": 47,
+      "precision": 0.957,
+      "density": 0.962,
+      "coverage": 0.289,
+      "amplification": 0.731,
+      "pass_rate": 0.392
+    },
+    "marine_animal": {
+      "count": 259,
+      "precision": 0.849,
+      "density": 0.598,
+      "coverage": 0.436,
+      "amplification": 4.03,
+      "pass_rate": 0.617
+    },
+    "human": {
+      "count": 195,
+      "precision": 0.949,
+      "density": 1.271,
+      "coverage": 0.84,
+      "amplification": 3.034,
+      "pass_rate": 0.965
+    }
+  },
+  "G0_fb": {
+    "aircraft": {
+      "count": 1333,
+      "precision": 0.795,
+      "density": 0.488,
+      "coverage": 0.273,
+      "amplification": 1.017,
+      "pass_rate": 0.957
+    },
+    "car": {
+      "count": 1340,
+      "precision": 0.804,
+      "density": 0.601,
+      "coverage": 0.299,
+      "amplification": 1.022,
+      "pass_rate": 0.905
+    },
+    "ship": {
+      "count": 1272,
+      "precision": 0.795,
+      "density": 0.594,
+      "coverage": 0.308,
+      "amplification": 0.97,
+      "pass_rate": 0.91
+    },
+    "butterfly": {
+      "count": 42,
+      "precision": 0.905,
+      "density": 0.89,
+      "coverage": 0.24,
+      "amplification": 0.64,
+      "pass_rate": 0.382
+    },
+    "marine_animal": {
+      "count": 91,
+      "precision": 0.824,
+      "density": 0.618,
+      "coverage": 0.293,
+      "amplification": 1.386,
+      "pass_rate": 0.394
+    },
+    "human": {
+      "count": 52,
+      "precision": 0.808,
+      "density": 0.785,
+      "coverage": 0.404,
+      "amplification": 0.792,
+      "pass_rate": 0.945
+    }
+  },
+  "G1_25": {
+    "aircraft": {
+      "count": 1446,
+      "precision": 0.741,
+      "density": 0.445,
+      "coverage": 0.25,
+      "amplification": 1.102,
+      "pass_rate": 0.945
+    },
+    "car": {
+      "count": 1224,
+      "precision": 0.752,
+      "density": 0.503,
+      "coverage": 0.245,
+      "amplification": 0.933,
+      "pass_rate": 0.922
+    },
+    "ship": {
+      "count": 1360,
+      "precision": 0.71,
+      "density": 0.465,
+      "coverage": 0.283,
+      "amplification": 1.037,
+      "pass_rate": 0.911
+    },
+    "butterfly": {
+      "count": 12,
+      "precision": 0.917,
+      "density": 0.75,
+      "coverage": 0.147,
+      "amplification": 0.183,
+      "pass_rate": 0.211
+    },
+    "marine_animal": {
+      "count": 31,
+      "precision": 0.839,
+      "density": 0.523,
+      "coverage": 0.196,
+      "amplification": 0.472,
+      "pass_rate": 0.215
+    },
+    "human": {
+      "count": 60,
+      "precision": 0.817,
+      "density": 0.497,
+      "coverage": 0.311,
+      "amplification": 0.913,
+      "pass_rate": 0.811
+    }
+  },
+  "G1_50": {
+    "aircraft": {
+      "count": 1400,
+      "precision": 0.775,
+      "density": 0.468,
+      "coverage": 0.236,
+      "amplification": 1.081,
+      "pass_rate": 0.95
+    },
+    "car": {
+      "count": 1039,
+      "precision": 0.754,
+      "density": 0.524,
+      "coverage": 0.215,
+      "amplification": 0.802,
+      "pass_rate": 0.903
+    },
+    "ship": {
+      "count": 1531,
+      "precision": 0.722,
+      "density": 0.511,
+      "coverage": 0.288,
+      "amplification": 1.182,
+      "pass_rate": 0.916
+    },
+    "butterfly": {
+      "count": 4,
+      "precision": 1.0,
+      "density": 0.55,
+      "coverage": 0.089,
+      "amplification": 0.062,
+      "pass_rate": 0.129
+    },
+    "marine_animal": {
+      "count": 68,
+      "precision": 0.853,
+      "density": 0.547,
+      "coverage": 0.249,
+      "amplification": 1.048,
+      "pass_rate": 0.313
+    },
+    "human": {
+      "count": 38,
+      "precision": 0.816,
+      "density": 0.679,
+      "coverage": 0.28,
+      "amplification": 0.586,
+      "pass_rate": 0.864
+    }
+  },
+  "G1_inv": {
+    "aircraft": {
+      "count": 1166,
+      "precision": 0.748,
+      "density": 0.428,
+      "coverage": 0.187,
+      "amplification": 0.927,
+      "pass_rate": 0.945
+    },
+    "car": {
+      "count": 930,
+      "precision": 0.738,
+      "density": 0.526,
+      "coverage": 0.178,
+      "amplification": 0.74,
+      "pass_rate": 0.861
+    },
+    "ship": {
+      "count": 1312,
+      "precision": 0.7,
+      "density": 0.441,
+      "coverage": 0.237,
+      "amplification": 1.043,
+      "pass_rate": 0.909
+    },
+    "butterfly": {
+      "count": 30,
+      "precision": 0.9,
+      "density": 0.773,
+      "coverage": 0.236,
+      "amplification": 0.476,
+      "pass_rate": 0.28
+    },
+    "marine_animal": {
+      "count": 255,
+      "precision": 0.745,
+      "density": 0.452,
+      "coverage": 0.36,
+      "amplification": 4.049,
+      "pass_rate": 0.574
+    },
+    "human": {
+      "count": 268,
+      "precision": 0.884,
+      "density": 1.08,
+      "coverage": 0.782,
+      "amplification": 4.255,
+      "pass_rate": 0.982
+    }
+  },
+  "G1_cur": {
+    "aircraft": {
+      "count": 1497,
+      "precision": 0.756,
+      "density": 0.448,
+      "coverage": 0.244,
+      "amplification": 1.091,
+      "pass_rate": 0.965
+    },
+    "car": {
+      "count": 1006,
+      "precision": 0.768,
+      "density": 0.508,
+      "coverage": 0.209,
+      "amplification": 0.733,
+      "pass_rate": 0.923
+    },
+    "ship": {
+      "count": 1673,
+      "precision": 0.762,
+      "density": 0.523,
+      "coverage": 0.308,
+      "amplification": 1.219,
+      "pass_rate": 0.943
+    },
+    "butterfly": {
+      "count": 4,
+      "precision": 0.75,
+      "density": 0.7,
+      "coverage": 0.058,
+      "amplification": 0.058,
+      "pass_rate": 0.286
+    },
+    "marine_animal": {
+      "count": 116,
+      "precision": 0.802,
+      "density": 0.483,
+      "coverage": 0.293,
+      "amplification": 1.687,
+      "pass_rate": 0.507
+    },
+    "human": {
+      "count": 28,
+      "precision": 0.893,
+      "density": 0.786,
+      "coverage": 0.276,
+      "amplification": 0.407,
+      "pass_rate": 0.933
+    }
+  },
+  "G1_AB": {
+    "aircraft": {
+      "count": 1472,
+      "precision": 0.764,
+      "density": 0.46,
+      "coverage": 0.278,
+      "amplification": 1.068,
+      "pass_rate": 0.971
+    },
+    "car": {
+      "count": 1132,
+      "precision": 0.747,
+      "density": 0.482,
+      "coverage": 0.239,
+      "amplification": 0.822,
+      "pass_rate": 0.929
+    },
+    "ship": {
+      "count": 1633,
+      "precision": 0.748,
+      "density": 0.529,
+      "coverage": 0.319,
+      "amplification": 1.185,
+      "pass_rate": 0.929
+    },
+    "butterfly": {
+      "count": 7,
+      "precision": 1.0,
+      "density": 1.114,
+      "coverage": 0.12,
+      "amplification": 0.101,
+      "pass_rate": 0.28
+    },
+    "marine_animal": {
+      "count": 61,
+      "precision": 0.82,
+      "density": 0.587,
+      "coverage": 0.244,
+      "amplification": 0.884,
+      "pass_rate": 0.418
+    },
+    "human": {
+      "count": 35,
+      "precision": 0.771,
+      "density": 0.537,
+      "coverage": 0.253,
+      "amplification": 0.507,
+      "pass_rate": 0.921
+    }
+  },
+  "G1_ABC": {
+    "aircraft": {
+      "count": 1449,
+      "precision": 0.786,
+      "density": 0.467,
+      "coverage": 0.261,
+      "amplification": 1.071,
+      "pass_rate": 0.961
+    },
+    "car": {
+      "count": 1407,
+      "precision": 0.782,
+      "density": 0.542,
+      "coverage": 0.27,
+      "amplification": 1.04,
+      "pass_rate": 0.931
+    },
+    "ship": {
+      "count": 1241,
+      "precision": 0.74,
+      "density": 0.512,
+      "coverage": 0.272,
+      "amplification": 0.917,
+      "pass_rate": 0.94
+    },
+    "butterfly": {
+      "count": 58,
+      "precision": 0.948,
+      "density": 0.903,
+      "coverage": 0.271,
+      "amplification": 0.856,
+      "pass_rate": 0.397
+    },
+    "marine_animal": {
+      "count": 37,
+      "precision": 0.946,
+      "density": 0.589,
+      "coverage": 0.218,
+      "amplification": 0.546,
+      "pass_rate": 0.352
+    },
+    "human": {
+      "count": 71,
+      "precision": 0.901,
+      "density": 0.803,
+      "coverage": 0.489,
+      "amplification": 1.047,
+      "pass_rate": 0.934
+    }
+  }
+}

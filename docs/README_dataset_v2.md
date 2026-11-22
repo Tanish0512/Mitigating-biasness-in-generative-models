@@ -171,3 +171,23 @@ CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node 4 src/generator/train_dif
 python src/evaluation/novelty_checks.py --data-dir ../data/dataset-0-v2 --output-dir ../results/novelty_checks_all \
     --model G0=results/g0_v2/classifier_new_p0.9/labels_G0v2.csv --model G1_ABC=results/novelty/g1_accum_guided_fb/labels_G1agfb.csv
 ```
+
+## Novelty part 2: n^-0.15 versus feedback weights (instructor feedback)
+
+Three extra generators, all with the intensive-phase recipe (2 x 64 images per GPU, batch 128, 150k steps):
+
+```bash
+# G0 with n^-0.15 weights on D0
+torchrun --nproc_per_node 2 src/generator/train_diffusion.py --data-dir ../data/dataset-0-v2 --output-dir ../runs/g0_cal \
+    --class-weighting power --class-weight-alpha 0.15
+# G1 on the curated D1 with n^-0.15 weights, and with the G1 feedback weights (same data, only the weights differ)
+torchrun --nproc_per_node 2 src/generator/train_diffusion.py --data-dir ../data/dataset-1-v2-curated --output-dir ../runs/g1_cur_cal \
+    --class-weighting power --class-weight-alpha 0.15
+torchrun --nproc_per_node 2 src/generator/train_diffusion.py --data-dir ../data/dataset-1-v2-curated --output-dir ../runs/g1_cur_fb \
+    --class-weighting file --class-weights-file ../runs/feedback/g1_fb_weights.json
+# intervals for the three models (results/novelty/bias_checks_cal)
+python src/evaluation/novelty_checks.py --data-dir ../data/dataset-0-v2 --output-dir ../results/novelty_checks_cal \
+    --model G0_cal=results/novelty/g0_cal/labels_g0cal.csv --model G1_cur_cal=results/novelty/g1_cur_cal/labels_g1curcal.csv \
+    --model G1_cur_fb=results/novelty/g1_cur_fb/labels_g1curfb.csv
+```
+Sampling, labelling and the CPU evaluation follow the same commands as the other novelty runs.

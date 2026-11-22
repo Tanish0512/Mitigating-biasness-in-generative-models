@@ -1,9 +1,9 @@
-"""Test interface for the project: generate live from the eight trained models and measure their bias.
+"""Test interface for the project: generate live from the eleven trained models and measure their bias.
 
 Tabs:
   1. Live generation - pick models, image count and seed; every model starts from the same noise,
      the labeller v2 counts the classes, and the bias metrics are compared with D0.
-  2. Full evaluation - the stored 4,750-image results for all eight models, with a browser of the
+  2. Full evaluation - the stored 4,750-image results for all eleven models, with a browser of the
      images each model drew for a chosen class.
   3. Pipeline - what each dataset and model is.
 
@@ -69,6 +69,12 @@ MODELS = {
                                "curated 25% D1 (confident G0 samples in D0 ratios), plain loss"),
     "G0 feedback weights (novelty)": ("g0_fb", "samples_g0_fb", "repo/results/novelty/g0_fb/labels_G0fb.csv",
                                       "D0 with per-class weights from G0's measured amplification"),
+    "G0 n^-0.15 weights (novelty)": ("g0_cal", "samples_g0_cal", "repo/results/novelty/g0_cal/labels_g0cal.csv",
+                                     "D0 with the mild fixed class-weight rule w ~ n^-0.15"),
+    "G1 curated + n^-0.15 (novelty)": ("g1_cur_cal", "samples_g1_cur_cal", "repo/results/novelty/g1_cur_cal/labels_g1curcal.csv",
+                                       "curated 25% D1 with the mild fixed rule w ~ n^-0.15"),
+    "G1 curated + feedback (novelty)": ("g1_cur_fb", "samples_g1_cur_fb", "repo/results/novelty/g1_cur_fb/labels_g1curfb.csv",
+                                        "the same curated 25% D1 with feedback weights"),
     "G1 full pipeline (novelty)": ("g1_accum_guided_fb", "samples_g1_accum_guided_fb",
                                    "repo/results/novelty/g1_accum_guided_fb/labels_G1agfb.csv",
                                    "accumulated D1 (all D0 + guided, curated G0 samples) with feedback weights"),

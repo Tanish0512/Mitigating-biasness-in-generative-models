@@ -35,6 +35,9 @@ amplification A_c = q_c / p_c, HDAI, TVD, DINOv2 coverage, copy check, and 95% b
 | G0 with `n^-1/2` loss weights | -1.50 [-1.63, -1.37] | 0.73 | 14.9% | 0.109 | 0.23 / 0.52 |
 | G1 curated + `n^-1/2` | -1.70 [-1.82, -1.57] | 0.48 | 16.6% | 0.114 | 0.20 / 0.46 |
 | G1 curated only | +0.50 [+0.27, +0.76] | 0.06 | 9.0% | 0.109 | 0.25 / 0.21 |
+| G0 with `n^-0.15` loss weights (novelty) | -0.35 [-0.52, -0.17] | 0.25 | 11.2% | 0.053 | 0.31 / 0.36 |
+| G1 curated + `n^-0.15` (novelty) | -0.40 [-0.58, -0.22] | 0.38 | 13.5% | 0.061 | 0.24 / 0.37 |
+| **G1 curated + feedback (novelty)** | **+0.12 [-0.08, +0.35]** | 0.46 | 12.8% | **0.046** | 0.24 / 0.31 |
 | **G0 feedback weights (novelty)** | **+0.09 [-0.10, +0.32]** | 0.64 | 13.1% | **0.018** | 0.29 / 0.31 |
 | G1 accumulated + guided (novelty) | +1.04 [+0.78, +1.35] | 0.10 | **8.6%** | 0.081 | 0.28 / 0.21 |
 | **G1 full pipeline (novelty)** | **+0.30 [+0.09, +0.52]** | **0.86** | 10.3% | 0.036 | 0.27 / **0.33** |
@@ -45,6 +48,9 @@ amplification A_c = q_c / p_c, HDAI, TVD, DINOv2 coverage, copy check, and 95% b
 * **Feedback-calibrated weights** (`w_c <- w_c * A_c^-0.5`, measured on the previous generation)
   remove the G0 bias and, on the accumulated guided D1, restore butterfly from 0.10 to 0.86 of its share
   without over-correcting.
+* A milder fixed rule (`n^-0.15`) still over-corrects at G0 and G1 (-0.35, -0.40; marine animal and human
+  over-produced, butterfly still 0.25-0.38). Feedback weights on the same curated D1 give +0.12 (interval
+  contains 0); butterfly reaches only 0.46, so the rarest class still needs accumulation and guidance.
 
 ## Repository structure
 

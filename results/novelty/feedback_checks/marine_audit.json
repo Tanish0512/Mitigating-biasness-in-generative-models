@@ -1,0 +1,289 @@
+{
+  "G0": {
+    "counted": 77,
+    "dino_probe": {
+      "agree": 1.0,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 77
+      }
+    },
+    "clip_zero_shot": {
+      "agree": 0.935,
+      "ship": 0.039,
+      "counts": {
+        "marine_animal": 72,
+        "ship": 3,
+        "aircraft": 2
+      }
+    },
+    "knn_vote": {
+      "agree": 0.987,
+      "ship": 0.013,
+      "counts": {
+        "marine_animal": 76,
+        "ship": 1
+      }
+    },
+    "on_real_class_manifold": 0.831,
+    "on_real_ship_manifold": 0.052,
+    "off_all_real_manifolds": 0.156,
+    "all_three_checks_agree": 0.935
+  },
+  "G0_inv": {
+    "counted": 259,
+    "dino_probe": {
+      "agree": 1.0,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 259
+      }
+    },
+    "clip_zero_shot": {
+      "agree": 0.927,
+      "ship": 0.058,
+      "counts": {
+        "marine_animal": 240,
+        "ship": 15,
+        "aircraft": 3,
+        "human": 1
+      }
+    },
+    "knn_vote": {
+      "agree": 0.992,
+      "ship": 0.004,
+      "counts": {
+        "marine_animal": 257,
+        "car": 1,
+        "ship": 1
+      }
+    },
+    "on_real_class_manifold": 0.865,
+    "on_real_ship_manifold": 0.027,
+    "off_all_real_manifolds": 0.131,
+    "all_three_checks_agree": 0.923
+  },
+  "G0_fb": {
+    "counted": 91,
+    "dino_probe": {
+      "agree": 1.0,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 91
+      }
+    },
+    "clip_zero_shot": {
+      "agree": 0.758,
+      "ship": 0.143,
+      "counts": {
+        "marine_animal": 69,
+        "ship": 13,
+        "aircraft": 4,
+        "unrecognisable": 4,
+        "human": 1
+      }
+    },
+    "knn_vote": {
+      "agree": 0.989,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 90,
+        "aircraft": 1
+      }
+    },
+    "on_real_class_manifold": 0.901,
+    "on_real_ship_manifold": 0.066,
+    "off_all_real_manifolds": 0.088,
+    "all_three_checks_agree": 0.747
+  },
+  "G1_25": {
+    "counted": 31,
+    "dino_probe": {
+      "agree": 1.0,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 31
+      }
+    },
+    "clip_zero_shot": {
+      "agree": 0.903,
+      "ship": 0.032,
+      "counts": {
+        "marine_animal": 28,
+        "unrecognisable": 1,
+        "aircraft": 1,
+        "ship": 1
+      }
+    },
+    "knn_vote": {
+      "agree": 0.935,
+      "ship": 0.032,
+      "counts": {
+        "marine_animal": 29,
+        "ship": 1,
+        "car": 1
+      }
+    },
+    "on_real_class_manifold": 0.871,
+    "on_real_ship_manifold": 0.0,
+    "off_all_real_manifolds": 0.097,
+    "all_three_checks_agree": 0.871
+  },
+  "G1_50": {
+    "counted": 68,
+    "dino_probe": {
+      "agree": 1.0,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 68
+      }
+    },
+    "clip_zero_shot": {
+      "agree": 0.912,
+      "ship": 0.088,
+      "counts": {
+        "marine_animal": 62,
+        "ship": 6
+      }
+    },
+    "knn_vote": {
+      "agree": 0.971,
+      "ship": 0.029,
+      "counts": {
+        "marine_animal": 66,
+        "ship": 2
+      }
+    },
+    "on_real_class_manifold": 0.912,
+    "on_real_ship_manifold": 0.029,
+    "off_all_real_manifolds": 0.074,
+    "all_three_checks_agree": 0.882
+  },
+  "G1_inv": {
+    "counted": 255,
+    "dino_probe": {
+      "agree": 1.0,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 255
+      }
+    },
+    "clip_zero_shot": {
+      "agree": 0.91,
+      "ship": 0.075,
+      "counts": {
+        "marine_animal": 232,
+        "ship": 19,
+        "aircraft": 3,
+        "human": 1
+      }
+    },
+    "knn_vote": {
+      "agree": 0.996,
+      "ship": 0.004,
+      "counts": {
+        "marine_animal": 254,
+        "ship": 1
+      }
+    },
+    "on_real_class_manifold": 0.804,
+    "on_real_ship_manifold": 0.012,
+    "off_all_real_manifolds": 0.18,
+    "all_three_checks_agree": 0.906
+  },
+  "G1_cur": {
+    "counted": 116,
+    "dino_probe": {
+      "agree": 1.0,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 116
+      }
+    },
+    "clip_zero_shot": {
+      "agree": 0.914,
+      "ship": 0.069,
+      "counts": {
+        "marine_animal": 106,
+        "ship": 8,
+        "aircraft": 1,
+        "unrecognisable": 1
+      }
+    },
+    "knn_vote": {
+      "agree": 0.966,
+      "ship": 0.034,
+      "counts": {
+        "marine_animal": 112,
+        "ship": 4
+      }
+    },
+    "on_real_class_manifold": 0.853,
+    "on_real_ship_manifold": 0.026,
+    "off_all_real_manifolds": 0.121,
+    "all_three_checks_agree": 0.888
+  },
+  "G1_AB": {
+    "counted": 61,
+    "dino_probe": {
+      "agree": 1.0,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 61
+      }
+    },
+    "clip_zero_shot": {
+      "agree": 0.918,
+      "ship": 0.049,
+      "counts": {
+        "marine_animal": 56,
+        "ship": 3,
+        "aircraft": 2
+      }
+    },
+    "knn_vote": {
+      "agree": 0.967,
+      "ship": 0.016,
+      "counts": {
+        "marine_animal": 59,
+        "ship": 1,
+        "aircraft": 1
+      }
+    },
+    "on_real_class_manifold": 0.885,
+    "on_real_ship_manifold": 0.066,
+    "off_all_real_manifolds": 0.082,
+    "all_three_checks_agree": 0.885
+  },
+  "G1_ABC": {
+    "counted": 37,
+    "dino_probe": {
+      "agree": 1.0,
+      "ship": 0.0,
+      "counts": {
+        "marine_animal": 37
+      }
+    },
+    "clip_zero_shot": {
+      "agree": 0.946,
+      "ship": 0.027,
+      "counts": {
+        "marine_animal": 35,
+        "unrecognisable": 1,
+        "ship": 1
+      }
+    },
+    "knn_vote": {
+      "agree": 0.973,
+      "ship": 0.027,
+      "counts": {
+        "marine_animal": 36,
+        "ship": 1
+      }
+    },
+    "on_real_class_manifold": 0.946,
+    "on_real_ship_manifold": 0.081,
+    "off_all_real_manifolds": 0.027,
+    "all_three_checks_agree": 0.919
+  }
+}
